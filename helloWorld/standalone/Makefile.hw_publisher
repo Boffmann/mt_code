@@ -4,12 +4,12 @@ LD            = $(CC)
 AR            = ar
 PICFLAGS      = -fPIC
 CCFLAGS       =
-CPPFLAGS      = $(PICFLAGS) $(GENFLAGS) -D_REENTRANT -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=500 -Wall -Wno-unused-function -I"." -I"/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/include" -I"/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/include/sys" -I"/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/include/dcps/C/SAC"
+CPPFLAGS      = $(PICFLAGS) $(GENFLAGS) -D_REENTRANT -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=500 -Wall -Wno-unused-function -I"." -I"$(OSPL_HOME)/include" -I"$(OSPL_HOME)/include/sys" -I"$(OSPL_HOME)/include/dcps/C/SAC"
 OBJEXT        = .o
 OUTPUT_OPTION = -o "$@"
 COMPILE.c     = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 COMPILE.cc    = $(CXX) $(CCFLAGS) $(CPPFLAGS) -c
-LDFLAGS       = -L"." -L"/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/lib" -Wl,-rpath,\$$ORIGIN -Wl,-rpath,\$$ORIGIN~/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/lib
+LDFLAGS       = -L"." -L"$(OSPL_HOME)/lib" -Wl,-rpath,\$$ORIGIN -Wl,-rpath,\$$ORIGIN$(OSPL_HOME)/lib
 
 CCC           = $(CXX)
 MAKEFILE      = Makefile.hw_publisher
