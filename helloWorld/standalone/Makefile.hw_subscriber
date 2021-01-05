@@ -1,0 +1,63 @@
+CC            = gcc
+CXX           = g++
+LD            = $(CC)
+AR            = ar
+PICFLAGS      = -fPIC
+CCFLAGS       =
+CPPFLAGS      = $(PICFLAGS) $(GENFLAGS) -D_REENTRANT -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=500 -Wall -Wno-unused-function -I"." -I"/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/include" -I"/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/include/sys" -I"/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/include/dcps/C/SAC"
+OBJEXT        = .o
+OUTPUT_OPTION = -o "$@"
+COMPILE.c     = $(CC) $(CFLAGS) $(CPPFLAGS) -c
+COMPILE.cc    = $(CXX) $(CCFLAGS) $(CPPFLAGS) -c
+LDFLAGS       = -L"." -L"/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/lib" -Wl,-rpath,\$$ORIGIN -Wl,-rpath,\$$ORIGIN~/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/lib
+
+CCC           = $(CXX)
+MAKEFILE      = Makefile.hw_subscriber
+DEPENDENCIES  = $(MAKEFILE)
+BTARGETDIR    = ./
+BIN           = $(BTARGETDIR)subscriber$(EXESUFFIX)$(EXEEXT)
+CAT           = cat
+MV            = mv -f
+RM            = rm -rf
+CP            = cp -p
+NUL           = /dev/null
+MKDIR         = mkdir -p
+TESTDIRSTART  = test -d
+TESTDIREND    = ||
+TOUCH         = touch
+EXEEXT        =
+LIBPREFIX     = lib
+LIBSUFFIX     =
+GENFLAGS      = -O3 -DNDEBUG
+LDLIBS        = -l"hw_types$(LIBSUFFIX)" -l"dcpssac" -l"ddskernel" -ldl $(subst lib,-l,$(sort $(basename $(notdir $(wildcard /usr/lib/librt.so /lib/librt.so))))) -lpthread
+OBJS          = .obj$(CFG)/subscriber$(OBJEXT) .obj$(CFG)/CheckStatus$(OBJEXT)
+SRC           = ../src/subscriber.c ../src/CheckStatus.c
+LINK.cc       = $(LD) $(LDFLAGS)
+EXPORTFLAGS   =
+
+all: $(BIN)
+
+$(BIN): $(OBJS)
+	@$(TESTDIRSTART) "$(BTARGETDIR)" $(TESTDIREND) $(MKDIR) "$(BTARGETDIR)"
+	$(LINK.cc) $(OBJS) $(LDLIBS) $(OUTPUT_OPTION)
+
+generated: $(GENERATED_DIRTY)
+	@-:
+
+.obj$(CFG)/subscriber$(OBJEXT): ../src/subscriber.c
+	@$(TESTDIRSTART) ".obj$(CFG)/" $(TESTDIREND) $(MKDIR) ".obj$(CFG)/"
+	$(COMPILE.c) $(EXPORTFLAGS) $(OUTPUT_OPTION) ../src/subscriber.c
+
+.obj$(CFG)/CheckStatus$(OBJEXT): ../src/CheckStatus.c
+	@$(TESTDIRSTART) ".obj$(CFG)/" $(TESTDIREND) $(MKDIR) ".obj$(CFG)/"
+	$(COMPILE.c) $(EXPORTFLAGS) $(OUTPUT_OPTION) ../src/CheckStatus.c
+
+clean:
+	-$(RM) $(OBJS)
+
+realclean: clean
+	-$(RM) $(BIN)
+	-$(RM) .obj$(CFG)/
+
+check-syntax:
+	$(COMPILE.cc) $(EXPORTFLAGS) $(CHK_SOURCES)

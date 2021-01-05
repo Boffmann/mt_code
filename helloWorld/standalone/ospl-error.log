@@ -1,0 +1,142 @@
+========================================================================================
+Report      : ERROR
+Date        : 2020-12-30T14:13:41+0100
+Description : Failed to checkout license feature 'OPENSPLICE_SPLICED'
+              License has expired (-3) '/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/etc'
+              License has expired (-3) '/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/etc'
+              No license for product (-1) '/home/hendrik/ADLINK/Vortex_v2/license'
+Node        : PC
+Process     : publisher <4127>
+Thread      : spliced 7fe1663e5700
+Internals   : P822/6.10.4p2/0ff5e2b0ac/1b268cddad/Licensing/ospl_license.c/187/0/1609334021.986645360/-1
+========================================================================================
+Report      : FATAL
+Date        : 2020-12-30T14:13:41+0100
+Description : Cannot acquire license for feature OPENSPLICE_SPLICED. This service is not licensed & will exit.
+Node        : PC
+Process     : publisher <4127>
+Thread      : spliced 7fe1663e5700
+Internals   : P822/6.10.4p2/0ff5e2b0ac/1b268cddad/service ospl_spliced/spliced.c/1398/0/1609334021.994604732/-1
+========================================================================================
+Report      : ERROR
+Date        : 2020-12-30T18:51:02+0100
+Description : Failed to checkout license feature 'OPENSPLICE_SPLICED'
+              License has expired (-3) '/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/etc'
+              License has expired (-3) '/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/etc'
+              No license for product (-1) '/home/hendrik/ADLINK/Vortex_v2/license'
+Node        : PC
+Process     : publisher <4625>
+Thread      : spliced 7fbbbcee5700
+Internals   : P822/6.10.4p2/0ff5e2b0ac/1b268cddad/Licensing/ospl_license.c/187/0/1609350662.768758244/-1
+========================================================================================
+Report      : FATAL
+Date        : 2020-12-30T18:51:02+0100
+Description : Cannot acquire license for feature OPENSPLICE_SPLICED. This service is not licensed & will exit.
+Node        : PC
+Process     : publisher <4625>
+Thread      : spliced 7fbbbcee5700
+Internals   : P822/6.10.4p2/0ff5e2b0ac/1b268cddad/service ospl_spliced/spliced.c/1398/0/1609350662.768938897/-1
+========================================================================================
+Context     : DDS_DomainParticipantFactory_create_participant
+Date        : 2020-12-30T18:51:07+0100
+Node        : PC
+Process     : publisher <4625>
+Thread      : main thread 7fbbbcea9040
+Internals   : sac_domainParticipantFactory.c/213/P822/6.10.4p2/0ff5e2b0ac/1b268cddad/-1
+----------------------------------------------------------------------------------------
+Report      : Bad parameter: Claim of object of type DDS_DOMAINPARTICIPANT pointed to by 0x0 failed
+Internals   : /home/dds/OvernightTests/overnight/ospli/tags/OSPL_V6_10_4p2-RC1/ubuntu1804-64a/x86_64.linux-release-inner/build/src/api/dcps/sac/code/sac_object.c/DDS_Object_claim/174/3/1609350667.673508828
+----------------------------------------------------------------------------------------
+Report      : Bad parameter: Object (0x0) is not a valid DDS_DOMAINPARTICIPANT pointer
+Internals   : /home/dds/OvernightTests/overnight/ospli/tags/OSPL_V6_10_4p2-RC1/ubuntu1804-64a/x86_64.linux-release-inner/build/src/api/dcps/sac/code/sac_object.c/DDS_Object_check/71/3/1609350667.673537109
+----------------------------------------------------------------------------------------
+Report      : Unable to connect to domain id = <ANY>.
+              The most common causes of this error are an incorrect configuration file or
+              that OpenSpliceDDS is not running (when using shared memory mode).
+Internals   : u_participantNew/u_participant.c/239/773/1609350667.673558720
+----------------------------------------------------------------------------------------
+Report      : Failed to start Spliced for domain 'ospl_sp_ddsi' within 10 seconds, result = U_RESULT_OK
+
+Internals   : u_domain::startProcessDomain/u_domain.c/1310/769/1609350667.673579750
+========================================================================================
+Report      : ERROR
+Date        : 2020-12-30T19:00:46+0100
+Description : Failed to checkout license feature 'OPENSPLICE_SPLICED'
+              License has expired (-3) '/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/etc'
+              License has expired (-3) '/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/etc'
+              No license for product (-1) '/home/hendrik/ADLINK/Vortex_v2/license'
+Node        : PC
+Process     : publisher <1852>
+Thread      : spliced 7f9eba160700
+Internals   : P822/6.10.4p2/0ff5e2b0ac/1b268cddad/Licensing/ospl_license.c/187/0/1609351246.045351598/-1
+========================================================================================
+Report      : FATAL
+Date        : 2020-12-30T19:00:46+0100
+Description : Cannot acquire license for feature OPENSPLICE_SPLICED. This service is not licensed & will exit.
+Node        : PC
+Process     : publisher <1852>
+Thread      : spliced 7f9eba160700
+Internals   : P822/6.10.4p2/0ff5e2b0ac/1b268cddad/service ospl_spliced/spliced.c/1398/0/1609351246.045558270/-1
+========================================================================================
+Context     : DDS_DomainParticipantFactory_create_participant
+Date        : 2020-12-30T19:00:50+0100
+Node        : PC
+Process     : publisher <1852>
+Thread      : main thread 7f9eba124040
+Internals   : sac_domainParticipantFactory.c/213/P822/6.10.4p2/0ff5e2b0ac/1b268cddad/-1
+----------------------------------------------------------------------------------------
+Report      : Bad parameter: Claim of object of type DDS_DOMAINPARTICIPANT pointed to by 0x0 failed
+Internals   : /home/dds/OvernightTests/overnight/ospli/tags/OSPL_V6_10_4p2-RC1/ubuntu1804-64a/x86_64.linux-release-inner/build/src/api/dcps/sac/code/sac_object.c/DDS_Object_claim/174/3/1609351250.937141773
+----------------------------------------------------------------------------------------
+Report      : Bad parameter: Object (0x0) is not a valid DDS_DOMAINPARTICIPANT pointer
+Internals   : /home/dds/OvernightTests/overnight/ospli/tags/OSPL_V6_10_4p2-RC1/ubuntu1804-64a/x86_64.linux-release-inner/build/src/api/dcps/sac/code/sac_object.c/DDS_Object_check/71/3/1609351250.937197715
+----------------------------------------------------------------------------------------
+Report      : Unable to connect to domain id = <ANY>.
+              The most common causes of this error are an incorrect configuration file or
+              that OpenSpliceDDS is not running (when using shared memory mode).
+Internals   : u_participantNew/u_participant.c/239/773/1609351250.937230010
+----------------------------------------------------------------------------------------
+Report      : Failed to start Spliced for domain 'ospl_sp_ddsi' within 10 seconds, result = U_RESULT_OK
+
+Internals   : u_domain::startProcessDomain/u_domain.c/1310/769/1609351250.937258410
+========================================================================================
+Report      : ERROR
+Date        : 2020-12-30T19:05:59+0100
+Description : Failed to checkout license feature 'OPENSPLICE_SPLICED'
+              License has expired (-3) '/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/etc'
+              License has expired (-3) '/home/hendrik/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.10.4p2/HDE/x86_64.linux/etc'
+              No license for product (-1) '/home/hendrik/ADLINK/Vortex_v2/license'
+Node        : PC
+Process     : publisher <4122>
+Thread      : spliced 7fc9633f0700
+Internals   : P822/6.10.4p2/0ff5e2b0ac/1b268cddad/Licensing/ospl_license.c/187/0/1609351559.954683198/-1
+========================================================================================
+Report      : FATAL
+Date        : 2020-12-30T19:05:59+0100
+Description : Cannot acquire license for feature OPENSPLICE_SPLICED. This service is not licensed & will exit.
+Node        : PC
+Process     : publisher <4122>
+Thread      : spliced 7fc9633f0700
+Internals   : P822/6.10.4p2/0ff5e2b0ac/1b268cddad/service ospl_spliced/spliced.c/1398/0/1609351559.954765907/-1
+========================================================================================
+Context     : DDS_DomainParticipantFactory_create_participant
+Date        : 2020-12-30T19:06:10+0100
+Node        : PC
+Process     : publisher <4122>
+Thread      : main thread 7fc9633b4040
+Internals   : sac_domainParticipantFactory.c/213/P822/6.10.4p2/0ff5e2b0ac/1b268cddad/-1
+----------------------------------------------------------------------------------------
+Report      : Bad parameter: Claim of object of type DDS_DOMAINPARTICIPANT pointed to by 0x0 failed
+Internals   : /home/dds/OvernightTests/overnight/ospli/tags/OSPL_V6_10_4p2-RC1/ubuntu1804-64a/x86_64.linux-release-inner/build/src/api/dcps/sac/code/sac_object.c/DDS_Object_claim/174/3/1609351570.858737102
+----------------------------------------------------------------------------------------
+Report      : Bad parameter: Object (0x0) is not a valid DDS_DOMAINPARTICIPANT pointer
+Internals   : /home/dds/OvernightTests/overnight/ospli/tags/OSPL_V6_10_4p2-RC1/ubuntu1804-64a/x86_64.linux-release-inner/build/src/api/dcps/sac/code/sac_object.c/DDS_Object_check/71/3/1609351570.858767508
+----------------------------------------------------------------------------------------
+Report      : Unable to connect to domain id = <ANY>.
+              The most common causes of this error are an incorrect configuration file or
+              that OpenSpliceDDS is not running (when using shared memory mode).
+Internals   : u_participantNew/u_participant.c/239/773/1609351570.858790776
+----------------------------------------------------------------------------------------
+Report      : Failed to start Spliced for domain 'ospl_sp_ddsi' within 10 seconds, result = U_RESULT_OK
+
+Internals   : u_domain::startProcessDomain/u_domain.c/1310/769/1609351570.858813868

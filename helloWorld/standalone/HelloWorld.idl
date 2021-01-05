@@ -1,0 +1,8 @@
+module HelloWorld {
+
+  struct Message {
+    string key;
+    long value;
+  };
+#pragma keylist Message key
+};
