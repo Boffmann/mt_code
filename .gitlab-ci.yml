@@ -1,0 +1,6 @@
+image: arm64v8/debian:latest
+
+build:
+  stage: build
+  script:
+    - uname -a
