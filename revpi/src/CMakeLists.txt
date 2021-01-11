@@ -1,0 +1,3 @@
+add_subdirectory(datamodel)
+add_subdirectory(dds_lib)
+add_subdirectory(revpi_worker)
