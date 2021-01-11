@@ -4,7 +4,7 @@
 void create_participant(const char* partition_name) {
 
   // Create DDS DomainParticipant
-  createParticipant("Listener example");
+  createParticipant(partition_name);
   printf("1.1\n");
 
 }

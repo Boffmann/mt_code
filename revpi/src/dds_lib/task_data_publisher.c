@@ -7,8 +7,6 @@ void publish_task_data(struct Task_Data* task_data) {
 
   DDS_Publisher message_Publisher;
   DDS_DataWriter message_DataWriter;
-  DDS_ConditionSeq* guardList = NULL;
-  DDS_StatusMask mask;
   printf("Creating a new DDS publisher for task data...\n");
 
   // Register the Topic's type in the DDS Domain.

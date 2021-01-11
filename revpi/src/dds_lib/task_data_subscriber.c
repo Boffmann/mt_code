@@ -8,14 +8,11 @@
 #include "task_data.h"
 
 void create_dds_listener() {
-  DDS_sequence_ListenerTaskData_TaskData* message_seq = DDS_sequence_ListenerTaskData_TaskData__alloc();
-  DDS_SampleInfoSeq* message_infoSeq = DDS_SampleInfoSeq__alloc();
   DDS_Subscriber message_Subscriber;
   DDS_DataReader message_DataReader;
   DDS_ConditionSeq* guardList = NULL;
   struct DDS_DataReaderListener *message_Listener;
   struct Listener_taskdata* Listener_data;
-  int count = 0;
   DDS_StatusMask mask;
   printf("Creating a new DDS listener for task data...\n");
 
@@ -69,7 +66,7 @@ void create_dds_listener() {
 
 void listen_for_task_data(void (*callback)(struct Task_Data* task_data)) {
 
-  process_data_callback = callback;
+  task_data_received_callback = callback;
 
   create_dds_listener();
 

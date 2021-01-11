@@ -94,7 +94,7 @@ void deleteTopic(DDS_Topic topic)
    checkStatus(g_status, "DDS_DomainParticipant_delete_topic");
 }
 
-DDS_Publisher createPublisher(char* publisherName)
+DDS_Publisher createPublisher()
 {
    DDS_Publisher publisher;
    DDS_PublisherQos* publisherQos = DDS_PublisherQos__alloc();

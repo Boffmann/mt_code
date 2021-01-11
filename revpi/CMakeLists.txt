@@ -23,6 +23,7 @@ string(TOUPPER ${META_PROJECT_ID} META_PROJECT_ID)
 
 # Project options
 option(BUILD_SHARED_LIBS      "Build shared instead of static libraries."              ON)
+add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 #
 # Declare project

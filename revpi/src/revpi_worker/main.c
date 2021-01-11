@@ -5,7 +5,7 @@
 
 void schedule_new_task(struct Task_Data* task_data) {
 
-    printf("This is a call to the callback function\n");
+    printf("This is a message from inside the schedule new task callback");
     printf("The received task ID is: %d" ,task_data->task_ID);
 
     return;
@@ -13,7 +13,7 @@ void schedule_new_task(struct Task_Data* task_data) {
 }
 
 // int main(int argc, char *argv[]) {
-void main() {
+int main() {
 
     create_participant("listener_example");
 

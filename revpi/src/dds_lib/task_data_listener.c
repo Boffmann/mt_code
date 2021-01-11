@@ -3,11 +3,14 @@
 #include "dds_dcps.h"
 #include "listener_task_dataSacDcps.h"
 
+task_data_received_t task_data_received_callback = NULL;
+
 void on_task_data_available(void *Listener_data, DDS_DataReader reader) {
+  //UNUSED(Listener_data);
+  (void) Listener_data;
   DDS_ReturnCode_t status;
   DDS_sequence_ListenerTaskData_TaskData* message_seq = DDS_sequence_ListenerTaskData_TaskData__alloc();
   DDS_SampleInfoSeq* message_infoSeq = DDS_SampleInfoSeq__alloc();
-  unsigned long i;
 
   printf("Got a message:\n");
 
@@ -42,8 +45,7 @@ void on_task_data_available(void *Listener_data, DDS_DataReader reader) {
     printf("\n Calling callback...\n");
     struct Task_Data task_data;
     task_data.task_ID = taskid;
-    printf("P: %p", process_data_callback);
-    process_data_callback(&task_data);
+    task_data_received_callback(&task_data);
   }
 
 }
