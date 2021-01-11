@@ -13,16 +13,13 @@ void publish_task_data(struct Task_Data* task_data) {
 
   // Register the Topic's type in the DDS Domain.
   g_MessageTypeSupport = ListenerTaskData_TaskDataTypeSupport__alloc();
-  printf("1.2\n");
   checkHandle(g_MessageTypeSupport, "ListenerTaskData_TaskDataTypeSupport__alloc");
   registerMessageType(g_MessageTypeSupport);
-  printf("1.3\n");
   // Create the Topic's in the DDS Domain.
   g_MessageTypeName = ListenerTaskData_TaskDataTypeSupport_get_type_name(g_MessageTypeSupport);
   g_MessageTopic = createTopic("ListenerTaskData_TaskData", g_MessageTypeName);
   DDS_free(g_MessageTypeName);
   DDS_free(g_MessageTypeSupport);
-  printf("1\n");
 
 
   // Create the Publisher in the DDS Domain.
@@ -32,7 +29,6 @@ void publish_task_data(struct Task_Data* task_data) {
   message_DataWriter = createDataWriter(message_Publisher, g_MessageTopic);
 
   // Initialize and pre-allocate the GuardList used to obtain the triggered Conditions.
-  printf("4\n");
 
   printf("Done creating Task Data Publisher...\n");
 

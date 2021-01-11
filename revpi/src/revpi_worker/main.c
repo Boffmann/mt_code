@@ -21,10 +21,10 @@ void main() {
 
     while(1) {
 
-        sleep(1.0);
         struct Task_Data task_data;
         task_data.task_ID = 123;
         publish_task_data(&task_data);
+        sleep(10.0);
 
     }
 
