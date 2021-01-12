@@ -5,7 +5,7 @@
 #include "CheckStatus.h"
 #include "task_data.h"
 
-typedef void (*task_data_received_t)(struct Task_Data*);
+typedef void (*task_data_received_t)(const task_data_t*);
 
 struct Listener_taskdata {
   DDS_DataReader* message_DataReader;

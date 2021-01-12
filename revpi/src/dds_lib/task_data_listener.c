@@ -43,7 +43,7 @@ void on_task_data_available(void *Listener_data, DDS_DataReader reader) {
 
   if (taskid != 0) {
     printf("\n Calling callback...\n");
-    struct Task_Data task_data;
+    task_data_t task_data;
     task_data.task_ID = taskid;
     task_data_received_callback(&task_data);
   }

@@ -3,7 +3,7 @@
 #include "DDS_entities_manager.h"
 #include "task_data.h"
 
-void publish_task_data(struct Task_Data* task_data) {
+void publish_task_data(const task_data_t* task_data) {
 
   DDS_Publisher message_Publisher;
   DDS_DataWriter message_DataWriter;

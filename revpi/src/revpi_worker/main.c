@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 
-void schedule_new_task(struct Task_Data* task_data) {
+void schedule_new_task(const task_data_t* task_data) {
 
     printf("This is a message from inside the schedule new task callback");
     printf("The received task ID is: %d" ,task_data->task_ID);
@@ -21,7 +21,7 @@ int main() {
 
     while(1) {
 
-        struct Task_Data task_data;
+        task_data_t task_data;
         task_data.task_ID = 123;
         publish_task_data(&task_data);
         sleep(10.0);

@@ -64,7 +64,7 @@ void create_dds_listener() {
 
 }
 
-void listen_for_task_data(void (*callback)(struct Task_Data* task_data)) {
+void listen_for_task_data(void (*callback)(const task_data_t* task_data)) {
 
   task_data_received_callback = callback;
 
