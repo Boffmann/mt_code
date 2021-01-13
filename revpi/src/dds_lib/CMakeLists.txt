@@ -26,6 +26,7 @@ set(sources
   ${source_path}/CheckStatus.c
   ${source_path}/DDS_entities_manager.c
   ${source_path}/domain_participant.c
+  ${source_path}/listener.c
   ${source_path}/publisher.c
   ${source_path}/topic.c
 )
