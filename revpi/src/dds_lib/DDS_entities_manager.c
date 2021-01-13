@@ -1,5 +1,4 @@
 #include "DDS_entities_manager.h"
-#include "listener_task_data.h"
 #include "CheckStatus.h"
 #include <stdio.h>
 
@@ -21,14 +20,10 @@ DDS_ReturnCode_t g_status;
 
 void createParticipant(const char * partitiontName)
 {
-   printf("p.1\n");
    g_domainParticipantFactory = DDS_DomainParticipantFactory_get_instance();
-   printf("p.2\n");
    checkHandle(g_domainParticipantFactory, "DDS_DomainParticipantFactory_get_instance");
-   printf("p.3\n");
 
    g_domainParticipant = DDS_DomainParticipantFactory_create_participant(g_domainParticipantFactory, g_domainId, DDS_PARTICIPANT_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
-   printf("p.4\n");
 
    checkHandle(g_domainParticipant, "DDS_DomainParticipantFactory_create_participant");
 
@@ -41,15 +36,15 @@ void deleteParticipant()
    checkStatus(g_status, "DDS_DomainParticipantFactory_delete_participant");
 }
 
-void registerMessageType(DDS_TypeSupport typeSupport)
-{
-   char* typeName = ListenerTaskData_TaskDataTypeSupport_get_type_name(typeSupport);
+// void registerMessageType(DDS_TypeSupport typeSupport)
+// {
+//    char* typeName = ListenerTaskData_TaskDataTypeSupport_get_type_name(typeSupport);
 
-   g_status = ListenerTaskData_TaskDataTypeSupport_register_type(typeSupport, g_domainParticipant, typeName);
-   checkStatus(g_status, "ListenerTaskData_TaskDataTypeSupport_register_type");
+//    g_status = ListenerTaskData_TaskDataTypeSupport_register_type(typeSupport, g_domainParticipant, typeName);
+//    checkStatus(g_status, "ListenerTaskData_TaskDataTypeSupport_register_type");
 
-   DDS_free(typeName);
-}
+//    DDS_free(typeName);
+// }
 
 DDS_Topic createTopic(const char *topicName, const char *typeName)
 {

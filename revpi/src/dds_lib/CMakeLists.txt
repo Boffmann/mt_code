@@ -22,12 +22,12 @@ set(generated_path "${CMAKE_BINARY_DIR}/gen")
 set(datamodel_lib datamodel)
 
 set(sources
-  ${source_path}/task_data_subscriber.c
-  ${source_path}/task_data_listener.c
-  ${source_path}/DDS_entities_manager.c
+  ${source_path}/actor_topic.c
   ${source_path}/CheckStatus.c
-  ${source_path}/setup.c
-  ${source_path}/task_data_publisher.c
+  ${source_path}/DDS_entities_manager.c
+  ${source_path}/domain_participant.c
+  ${source_path}/publisher.c
+  ${source_path}/topic.c
 )
 
 #

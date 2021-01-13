@@ -1,0 +1,18 @@
+module RevPiDDS {
+  struct TaskData {
+    long taskID;
+    string message;
+  };
+  #pragma keylist TaskData taskID
+
+  struct Actors {
+    string address;
+    string role;
+  };
+  #pragma keylist Actors address
+
+  struct Decision {
+    string message;
+  };
+  #pragma keylist Decision message
+};

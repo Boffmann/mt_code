@@ -24,16 +24,16 @@ set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 set(generated_path "${CMAKE_BINARY_DIR}/gen")
 
 set(idl_file
-  ${source_path}/listener_task_data.idl
+  ${source_path}/datamodel.idl
 )
 
 set (sources
-    ${generated_path}/listener_task_data.h
-    ${generated_path}/listener_task_dataDcps.h
-    ${generated_path}/listener_task_dataSacDcps.h
-    ${generated_path}/listener_task_dataSplDcps.h
-    ${generated_path}/listener_task_dataSacDcps.c
-    ${generated_path}/listener_task_dataSplDcps.c
+    ${generated_path}/datamodel.h
+    ${generated_path}/datamodelDcps.h
+    ${generated_path}/datamodelSacDcps.h
+    ${generated_path}/datamodelSplDcps.h
+    ${generated_path}/datamodelSacDcps.c
+    ${generated_path}/datamodelSplDcps.c
 )
 
 #
@@ -43,8 +43,11 @@ set (sources
 # Generate idl files
 execute_process(COMMAND $ENV{OSPL_HOME}/bin/idlpp -S -l c -d ${generated_path} ${idl_file})
 
+# Make generated object files position independent in order for them to be linkable to a shared lib
+add_compile_options(-fPIC)
+
 # Build library
-add_library( ${target} SHARED
+add_library( ${target} STATIC
   ${sources}
 )
 

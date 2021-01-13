@@ -2,7 +2,7 @@
 #define _DDSENTITIESMANAGER_H_
 
 #include "dds_dcps.h"
-#include "listener_task_data.h"
+#include "datamodel.h"
 
 // DDS entities and other variables
 extern DDS_DomainId_t g_domainId;

@@ -1,7 +1,0 @@
-module ListenerTaskData {
-  struct TaskData {
-    long taskID;
-    string message;
-  };
-  #pragma keylist TaskData taskID
-};

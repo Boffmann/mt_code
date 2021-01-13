@@ -4,14 +4,10 @@
 # External dependencies
 #
 
-include_directories($ENV{OSPL_HOME}/include)
-include_directories($ENV{OSPL_HOME}/include/sys)
 include_directories($ENV{OSPL_HOME}/include/dcps/C/SAC)
-include_directories($ENV{OSPL_HOME}/include/dcps/C/C99)
 
+# OSPL libs
 LINK_DIRECTORIES($ENV{OSPL_HOME}/lib)
-
-set(OSPL_LINK_LIBS PUBLIC ddskernel dcpsc99)
 
 set(target revpi_worker)
 
@@ -47,6 +43,5 @@ target_include_directories(${target}
 
 target_link_libraries(${target}
     PRIVATE
-    ${OSPL_LINK_LIBS}
     ${dds_lib}
 )

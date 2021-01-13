@@ -1,31 +1,30 @@
-#include "dds_lib/include/task_data.h"
+#include "dds_lib/include/dds_lib.h"
 #include <stdio.h>
 #include <unistd.h>
 
 
-void schedule_new_task(const task_data_t* task_data) {
-
-    printf("This is a message from inside the schedule new task callback");
-    printf("The received task ID is: %d" ,task_data->task_ID);
-
-    return;
-
-}
-
 // int main(int argc, char *argv[]) {
 int main() {
 
-    create_participant("listener_example");
+    domain_participant_t domain_participant = setup_dds_domain("Test_Partition");
+    
+    topic_t actors_topic = join_topic(&domain_participant, ACTORS); 
 
-    listen_for_task_data(&schedule_new_task);
+    publisher_t actors_publisher = add_publisher(&domain_participant);
 
-    while(1) {
+    publisher_add_datawriter(&actors_publisher, &actors_topic);
 
-        task_data_t task_data;
-        task_data.task_ID = 123;
-        publish_task_data(&task_data);
-        sleep(10.0);
+
+    for (int i = 0; i < 10; ++i) {
+
+        sleep(1);
 
     }
+
+    publisher_cleanup(&actors_publisher, &domain_participant);
+
+    topic_leave(&actors_topic, &domain_participant);
+    
+    domain_participant_delete(&domain_participant);
 
 }
