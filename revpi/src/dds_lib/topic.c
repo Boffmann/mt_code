@@ -1,7 +1,6 @@
 #include "topic.h"
 #include "actor_topic.h"
 #include "task_topic.h"
-#include "DDS_entities_manager.h"
 #include "CheckStatus.h"
 
 // Attribute structure

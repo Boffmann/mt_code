@@ -17,7 +17,7 @@ typedef struct {
 publisher_t publisher_create_new(const domain_participant_t* domain_participant);
 void publisher_cleanup(publisher_t* publisher, const domain_participant_t* domain_participant);
 
-void publisher_add_datawriter(publisher_t* publisher, const topic_t* topic);
+// void publisher_add_datawriter(publisher_t* publisher, const topic_t* topic);
 
 
 #endif

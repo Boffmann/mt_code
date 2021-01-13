@@ -11,7 +11,6 @@ topic_t actors_topic_create(const domain_participant_t* domain_participant) {
     // Register Topic's name in DDS Domain
     DDS_TypeSupport message_type_support = RevPiDDS_ActorsTypeSupport__alloc();
     checkHandle(message_type_support, "RevPiDDS_ActorsTypeSupport__alloc");
-    // registerMessageType(message_type_support);
     char* type_name = RevPiDDS_ActorsTypeSupport_get_type_name(message_type_support);
 
     status = RevPiDDS_ActorsTypeSupport_register_type(message_type_support, domain_participant->dds_domainParticipant, type_name);
@@ -20,7 +19,6 @@ topic_t actors_topic_create(const domain_participant_t* domain_participant) {
     DDS_free(type_name);
 
     char* message_type_name = RevPiDDS_ActorsTypeSupport_get_type_name(message_type_support);
-    // createTopic();
     DDS_TopicQos* topic_qos = DDS_TopicQos__alloc();
     checkHandle(topic_qos, "DDS_TopicQos__alloc");
     status = DDS_DomainParticipant_get_default_topic_qos(domain_participant->dds_domainParticipant, topic_qos);

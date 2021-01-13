@@ -21,7 +21,7 @@ domain_participant_t setup_dds_domain(char* partition_name);
 
 topic_t join_topic(domain_participant_t* domain_participant, const TopicType type);
 
-publisher_t add_publisher(const domain_participant_t* domain_participant);
+publisher_t add_publisher(const domain_participant_t* domain_participant, const topic_t* topic);
 
 listener_t add_listener(const domain_participant_t* domain_participant, const topic_t* topic);
 

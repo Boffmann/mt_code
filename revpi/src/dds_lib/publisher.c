@@ -82,8 +82,10 @@ void publisher_cleanup(publisher_t* publisher, const domain_participant_t* domai
 
 // BEGIN REGION Library Interface Functions
 
-publisher_t add_publisher(const domain_participant_t* domain_participant) {
-    return publisher_create_new(domain_participant);
+publisher_t add_publisher(const domain_participant_t* domain_participant, const topic_t* topic) {
+    publisher_t new_publisher = publisher_create_new(domain_participant);
+    publisher_add_datawriter(&new_publisher, topic);
+    return new_publisher;
 }
 
 // END REGION Library Interface Functions

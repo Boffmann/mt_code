@@ -5,6 +5,7 @@
 #include "topic.h"
 #include "domain_participant.h"
 #include "listener.h"
+#include "publisher.h"
 
 typedef struct {
     long task_id;
@@ -20,6 +21,7 @@ typedef void (*on_task_data_available_t)(const task_t* task_data);
 extern on_task_data_available_t on_task_data_available_callback;
 
 topic_t tasks_topic_create(const domain_participant_t* domain_participant);
+void task_topic_publish(const publisher_t* publisher, const task_t* task_data);
 void task_topic_listen(listener_t* listener, on_task_data_available_t callback);
 
 #endif

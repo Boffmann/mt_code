@@ -59,10 +59,6 @@ listener_t listener_create_new(const domain_participant_t* domain_participant, c
     new_listener.dds_listener = DDS_DataReaderListener__alloc();
     checkHandle(new_listener.dds_listener, "DDS_DataReaderListener__alloc");
 
-    DDS_StatusMask mask = DDS_DATA_AVAILABLE_STATUS | DDS_REQUESTED_DEADLINE_MISSED_STATUS;
-    status = DDS_DataReader_set_listener(new_listener.dds_dataReader, new_listener.dds_listener, mask);
-    checkStatus(status, "DDS_DataReader_set_listener");
-
     return new_listener;
 
 }
