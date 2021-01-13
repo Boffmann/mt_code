@@ -5,7 +5,8 @@
 #include "domain_participant.h"
 
 typedef enum {
-    ACTORS = 0
+    ACTORS = 0,
+    TASKS = 1
 } TopicType;
 
 typedef struct {
@@ -14,13 +15,9 @@ typedef struct {
 
 } topic_t;
 
-// REGION Topic behaviour functions
 topic_t topic_create_new(domain_participant_t* domain_participant, const char* topicName, const char* typeName, DDS_TopicQos* topic_qos);
 void topic_leave(topic_t* topic, domain_participant_t* domain_participant);
 
-// REGION Publisher behaviour functions
-// struct topic_publisher_t topic_publisher_create_new(const topic_t* topic);
-// void topic_publisher_delete(const struct topic_publisher_t* publisher);
 
 
 #endif

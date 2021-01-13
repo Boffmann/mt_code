@@ -9,11 +9,11 @@ int main() {
     domain_participant_t domain_participant = setup_dds_domain("Test_Partition");
     
     topic_t actors_topic = join_topic(&domain_participant, ACTORS); 
+    topic_t tasks_topic = join_topic(&domain_participant, TASKS);
 
     publisher_t actors_publisher = add_publisher(&domain_participant);
 
     publisher_add_datawriter(&actors_publisher, &actors_topic);
-
 
     for (int i = 0; i < 10; ++i) {
 
@@ -23,6 +23,7 @@ int main() {
 
     publisher_cleanup(&actors_publisher, &domain_participant);
 
+    topic_leave(&tasks_topic, &domain_participant);
     topic_leave(&actors_topic, &domain_participant);
     
     domain_participant_delete(&domain_participant);

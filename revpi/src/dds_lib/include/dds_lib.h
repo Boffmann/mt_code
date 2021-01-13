@@ -11,6 +11,7 @@
 #include "actor.h"
 #include "topic.h"
 #include "publisher.h"
+#include "listener.h"
 
 /**
  * Sets up the entire DDS domain.
@@ -21,6 +22,8 @@ domain_participant_t setup_dds_domain(char* partition_name);
 topic_t join_topic(domain_participant_t* domain_participant, const TopicType type);
 
 publisher_t add_publisher(const domain_participant_t* domain_participant);
+
+listener_t add_listener(const domain_participant_t* domain_participant, const topic_t* topic);
 
 
 

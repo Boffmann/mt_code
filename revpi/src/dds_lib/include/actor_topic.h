@@ -3,7 +3,6 @@
 
 #include "dds_dcps.h"
 #include "topic.h"
-#include "actor.h"
 #include "domain_participant.h"
 
 

@@ -1,9 +1,9 @@
 module RevPiDDS {
-  struct TaskData {
+  struct Tasks {
     long taskID;
     string message;
   };
-  #pragma keylist TaskData taskID
+  #pragma keylist Tasks taskID
 
   struct Actors {
     string address;

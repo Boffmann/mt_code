@@ -79,3 +79,11 @@ void listener_cleanup(const listener_t* listener, const domain_participant_t* do
     DDS_free(listener->dds_listener);
     
 }
+
+// BEGIN REGION Library Interface Functions
+
+listener_t add_listener(const domain_participant_t* domain_participant, const topic_t* topic) {
+    return listener_create_new(domain_participant, topic);
+}
+
+// END REGION Library Interface Functions

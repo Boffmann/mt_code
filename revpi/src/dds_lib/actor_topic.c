@@ -1,7 +1,7 @@
 #include "actor_topic.h"
 #include "CheckStatus.h"
 #include "actor.h"
-#include "DDS_entities_manager.h"
+#include "datamodel.h"
 
 
 topic_t actors_topic_create(const domain_participant_t* domain_participant) {

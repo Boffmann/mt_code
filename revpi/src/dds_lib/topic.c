@@ -1,5 +1,6 @@
 #include "topic.h"
 #include "actor_topic.h"
+#include "task_topic.h"
 #include "DDS_entities_manager.h"
 #include "CheckStatus.h"
 
@@ -17,9 +18,16 @@ typedef struct {
 // BEGIN REGION Library Interface Functions
 
 topic_t join_topic(domain_participant_t* domain_participant, const TopicType type) {
-    (void)type;
 
-    return actors_topic_create(domain_participant);
+    switch (type) {
+    case ACTORS:
+        return actors_topic_create(domain_participant);
+        break;
+    default:
+        return tasks_topic_create(domain_participant);
+        break;
+    }
+    return tasks_topic_create(domain_participant);
 }
 
 // END REGION Library Interface Functions
