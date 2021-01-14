@@ -6,7 +6,7 @@
 #include "domain_participant.h"
 
 
-topic_t actors_topic_create(const domain_participant_t* domain_participant);
+topic_t actors_topic_create(const domain_participant_t* domain_participant, const DDS_TopicQos* qos);
 
 
 #endif

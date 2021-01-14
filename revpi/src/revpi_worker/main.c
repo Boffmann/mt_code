@@ -16,6 +16,15 @@ void schedule_new_task(const task_t* task_data) {
     printf("RECEIVED THIS TASK ID: %ld\n", task_data->task_id);
 }
 
+
+DDS_TopicQos* create_topic_qos(const domain_participant_t* domain_participant) {
+    DDS_TopicQos* topic_qos = get_default_topic_qos(domain_participant);
+    topic_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
+    topic_qos->durability.kind = DDS_TRANSIENT_DURABILITY_QOS;
+
+    return topic_qos;
+}
+
 int main(int argc, char *argv[]) {
 
     RunningMode mode;
@@ -38,8 +47,11 @@ int main(int argc, char *argv[]) {
 
     domain_participant_t domain_participant = setup_dds_domain("Test_Partition");
 
-    topic_t tasks_topic = join_topic(&domain_participant, TASKS);
+    DDS_TopicQos* topic_qos = create_topic_qos(&domain_participant);
 
+    topic_t tasks_topic = join_topic(&domain_participant, topic_qos, TASKS);
+
+    DDS_free(topic_qos);
 
     if (mode == TASK_PUBLISHER) {
 

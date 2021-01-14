@@ -16,22 +16,32 @@ typedef struct {
 
 // BEGIN REGION Library Interface Functions
 
-topic_t join_topic(domain_participant_t* domain_participant, const TopicType type) {
+topic_t join_topic(domain_participant_t* domain_participant, const DDS_TopicQos* topic_qos, const TopicType type) {
 
     switch (type) {
     case ACTORS:
-        return actors_topic_create(domain_participant);
+        return actors_topic_create(domain_participant, topic_qos);
         break;
     default:
-        return tasks_topic_create(domain_participant);
+        return tasks_topic_create(domain_participant, topic_qos);
         break;
     }
-    return tasks_topic_create(domain_participant);
+    return tasks_topic_create(domain_participant, topic_qos);
+}
+
+DDS_TopicQos* get_default_topic_qos(const domain_participant_t* domain_participant) {
+
+    DDS_TopicQos* topic_qos = DDS_TopicQos__alloc();
+    checkHandle(topic_qos, "DDS_TopicQos__alloc");
+    DDS_ReturnCode_t status = DDS_DomainParticipant_get_default_topic_qos(domain_participant->dds_domainParticipant, topic_qos);
+    checkStatus(status, "DDS_DomainParticipant_get_default_topic_qos");
+
+    return topic_qos;
 }
 
 // END REGION Library Interface Functions
 
-topic_t topic_create_new(domain_participant_t* domain_participant, const char* topicName, const char* typeName, DDS_TopicQos* topic_qos) {
+topic_t topic_create_new(domain_participant_t* domain_participant, const char* topicName, const char* typeName, const DDS_TopicQos* topic_qos) {
 
     topic_t new_topic;
 
@@ -56,6 +66,8 @@ topic_t topic_create_new(domain_participant_t* domain_participant, const char* t
     checkHandle(new_topic.dds_topic, message);
 
     free(message);
+
+    new_topic.qos_handle = topic_qos;
 
     return new_topic;
 

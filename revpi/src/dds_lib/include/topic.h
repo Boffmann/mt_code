@@ -23,6 +23,7 @@ typedef enum {
 typedef struct {
 
     DDS_Topic dds_topic;    ///< The DDS topic that represents this topic in the DDS domain.
+    const DDS_TopicQos* qos_handle;
 
 } topic_t;
 
@@ -36,7 +37,7 @@ typedef struct {
  * 
  * @return A new topic
  */
-topic_t topic_create_new(domain_participant_t* domain_participant, const char* topicName, const char* typeName, DDS_TopicQos* topic_qos);
+topic_t topic_create_new(domain_participant_t* domain_participant, const char* topicName, const char* typeName, const DDS_TopicQos* topic_qos);
 
 /**
  * @brief Frees all resources kept by this topic

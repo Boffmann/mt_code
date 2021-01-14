@@ -4,7 +4,7 @@
 #include "datamodel.h"
 
 
-topic_t actors_topic_create(const domain_participant_t* domain_participant) {
+topic_t actors_topic_create(const domain_participant_t* domain_participant, const DDS_TopicQos* topic_qos) {
 
     DDS_ReturnCode_t status;
 
@@ -19,14 +19,6 @@ topic_t actors_topic_create(const domain_participant_t* domain_participant) {
     DDS_free(type_name);
 
     char* message_type_name = RevPiDDS_ActorsTypeSupport_get_type_name(message_type_support);
-    DDS_TopicQos* topic_qos = DDS_TopicQos__alloc();
-    checkHandle(topic_qos, "DDS_TopicQos__alloc");
-    status = DDS_DomainParticipant_get_default_topic_qos(domain_participant->dds_domainParticipant, topic_qos);
-    checkStatus(status, "DDS_DomainParticipant_get_default_topic_qos");
-
-    // TODO Adjust QoS
-    topic_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topic_qos->durability.kind = DDS_TRANSIENT_DURABILITY_QOS;
 
     DDS_free(message_type_support);
 
@@ -38,7 +30,6 @@ topic_t actors_topic_create(const domain_participant_t* domain_participant) {
     );
 
     DDS_free(message_type_name);
-    DDS_free(topic_qos);
 
     return new_topic;
 }

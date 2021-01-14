@@ -35,7 +35,7 @@ extern on_task_data_available_t on_task_data_available_callback;
  * 
  * @return A new task topic
  */ 
-topic_t tasks_topic_create(const domain_participant_t* domain_participant);
+topic_t tasks_topic_create(const domain_participant_t* domain_participant, const DDS_TopicQos* topic_qos);
 
 /**
  * @brief Publish new task data to the task topic

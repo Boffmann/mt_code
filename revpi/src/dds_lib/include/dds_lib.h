@@ -19,11 +19,12 @@
  */
 domain_participant_t setup_dds_domain(char* partition_name);
 
-topic_t join_topic(domain_participant_t* domain_participant, const TopicType type);
+topic_t join_topic(domain_participant_t* domain_participant, const DDS_TopicQos* topic_qos, const TopicType type);
 
 publisher_t add_publisher(const domain_participant_t* domain_participant, const topic_t* topic);
 
 listener_t add_listener(const domain_participant_t* domain_participant, const topic_t* topic);
 
+DDS_TopicQos* get_default_topic_qos(const domain_participant_t* domain_participant);
 
 #endif
