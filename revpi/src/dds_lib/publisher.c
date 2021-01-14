@@ -6,7 +6,7 @@ publisher_t publisher_create_new(const domain_participant_t* domain_participant)
     publisher_t new_publisher;
 
     new_publisher.has_dataWriter = false;
-    
+
     DDS_PublisherQos* publisher_qos = DDS_PublisherQos__alloc();
     checkHandle(publisher_qos, "DDS_PublisherQos__alloc");
     DDS_ReturnCode_t status = DDS_DomainParticipant_get_default_publisher_qos(domain_participant->dds_domainParticipant, publisher_qos);
@@ -33,6 +33,14 @@ publisher_t publisher_create_new(const domain_participant_t* domain_participant)
     return new_publisher;
 }
 
+/**
+ * @brief Private function that adds a new data writer to a publisher.
+ *
+ * The data writer is actually dependend on the used topic
+ * 
+ * @param publisher Handle to the publisher where the datawriter should be added to
+ * @param topic Handle to the topic where the new datawriter should be able to publish to
+ */
 void publisher_add_datawriter(publisher_t* publisher, const topic_t* topic) {
 
     DDS_DataWriter dataWriter;
@@ -67,9 +75,9 @@ void publisher_cleanup(publisher_t* publisher, const domain_participant_t* domai
     DDS_ReturnCode_t status;
 
     if (publisher->has_dataWriter) {
-            status = DDS_Publisher_delete_datawriter(publisher->dds_publisher, publisher->dds_dataWriter);
-            checkStatus(status, "DDS_Publisher_delete_datawriter");
-            publisher->has_dataWriter = false;
+        status = DDS_Publisher_delete_datawriter(publisher->dds_publisher, publisher->dds_dataWriter);
+        checkStatus(status, "DDS_Publisher_delete_datawriter");
+        publisher->has_dataWriter = false;
     }
     
     status = DDS_DomainParticipant_delete_publisher(

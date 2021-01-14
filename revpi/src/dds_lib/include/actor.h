@@ -3,14 +3,25 @@
 
 #include "dds_dcps.h"
 
+/**
+ * @brief This represents the participating actor's role in the system.
+ * 
+ * An actor's role is mainly used during testing and showcasing.
+ * In the final product most actors will be WORKERS, and one (the main PC)
+ * is MAIN
+ * 
+ */
 typedef enum {
 
-    WORKER
+    WORKER,     ///< Worker Actors are used for redundant computations of tasks
+    MAIN        ///< Main Actors do the main work and rely on WORKERS for redundant computation/decision making
 
 } ActorRole;
 
 
-
+/**
+ * @brief 
+ */
 typedef struct {
     // The actors address / identifier
     char* address;

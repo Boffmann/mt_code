@@ -4,6 +4,13 @@
 
 on_task_data_available_t on_task_data_available_callback = NULL;
 
+/**
+ * @brief Represents a listener that is specific for the Task Topic.
+ */
+typedef struct {
+    DDS_DataReader* task_data_reader;   ///< Data Reader that reads data specific to TASK topic.
+} task_listener_data_t;
+
 void on_task_data_available(void* listener_data, DDS_DataReader reader) {
     // Unused parameter
     (void) listener_data;

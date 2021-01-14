@@ -7,17 +7,36 @@
 #include "domain_participant.h"
 #include "topic.h"
 
-
+/**
+ * @brief Represents a DDS publisher that can publish new messages to a topic
+ * 
+ * This structure combines a DDS publisher and DataWriter used to publish new messages onto a topic.
+ * It is possible to create a publisher and add a dataWriter to it later on
+ */
 typedef struct {
-    DDS_Publisher dds_publisher;
-    DDS_DataWriter dds_dataWriter;
-    bool has_dataWriter;
+    DDS_Publisher dds_publisher;    ///< DDS Publisher used to publish to a topic
+    DDS_DataWriter dds_dataWriter;  ///< Datawriter to actually write data to a topic.
+    bool has_dataWriter;            ///< Boolean indicating whether the publisher has an associated dataWriter
 } publisher_t;
 
+/**
+ * @brief Create a new publisher for a topic
+ * 
+ * This only creates a DDS publisher. The topic is only required when creating the datawriter object.
+ * It is adviced to use add_publisher(domain_participant, topic) in dds_lib.h to create a new publisher.
+ * 
+ * @param domain_participant Handle to a participant that is in same partition as the topic to publish to.
+ * 
+ * @return A new publisher that can be used to publish to topics in the specified DDS partition.
+ */
 publisher_t publisher_create_new(const domain_participant_t* domain_participant);
+
+/**
+ * @brief Frees all resources kept by the publisher
+ * 
+ * @param publisher Handle to the publisher to delete
+ * @param domain_participant Handle to a participant used to create this publisher
+ */
 void publisher_cleanup(publisher_t* publisher, const domain_participant_t* domain_participant);
-
-// void publisher_add_datawriter(publisher_t* publisher, const topic_t* topic);
-
 
 #endif

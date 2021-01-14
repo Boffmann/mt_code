@@ -4,18 +4,46 @@
 #include "dds_dcps.h"
 #include "domain_participant.h"
 
+/**
+ * @brief This represents the topic's type
+ * 
+ * A TopicType indicates what the topic is used for and what kind of data is
+ * expected to be in the topic.
+ */
 typedef enum {
-    ACTORS = 0,
-    TASKS = 1
+    ACTORS = 0, ///< Topic used to store information about the actors in the system
+    TASKS = 1   ///< Topic used to publish information about tasks that should be processed by WORKERS
 } TopicType;
 
+/**
+ * @brief Represents a topic.
+ * 
+ * Data can be published to this topic or it can be listened upon new data
+ */
 typedef struct {
 
-    DDS_Topic dds_topic;
+    DDS_Topic dds_topic;    ///< The DDS topic that represents this topic in the DDS domain.
 
 } topic_t;
 
+/**
+ * @brief Create a new topic
+ * 
+ * @param domain_participant Handle to a participant in the same partition that this topic should be created in.
+ * @param topicName Name of the new topic. Should be unique withing a partition
+ * @param typeName Name of the type that this topic should store.
+ * @param topic_qos The QoS settings that this topic should have
+ * 
+ * @return A new topic
+ */
 topic_t topic_create_new(domain_participant_t* domain_participant, const char* topicName, const char* typeName, DDS_TopicQos* topic_qos);
+
+/**
+ * @brief Frees all resources kept by this topic
+ * 
+ * @param topic Handle to the topic to free
+ * @param domain_participant Handle to a participant used to create this topic
+ */
 void topic_leave(topic_t* topic, domain_participant_t* domain_participant);
 
 

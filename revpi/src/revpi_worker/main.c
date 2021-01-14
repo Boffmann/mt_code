@@ -38,7 +38,6 @@ int main(int argc, char *argv[]) {
 
     domain_participant_t domain_participant = setup_dds_domain("Test_Partition");
 
-    // topic_t actors_topic = join_topic(&domain_participant, ACTORS); 
     topic_t tasks_topic = join_topic(&domain_participant, TASKS);
 
 
