@@ -2,6 +2,7 @@
 #include "dds_lib/include/task_topic.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 typedef enum {
 
@@ -10,10 +11,18 @@ typedef enum {
 
 } RunningMode;
 
+volatile bool running = true;
+
 void schedule_new_task(const task_t* task_data) {
     printf("THIS IS THE TASK DATA CALLBACK\n");
 
     printf("RECEIVED THIS TASK ID: %d\n", task_data->task_type);
+
+    if (task_data->task_type == SHUTDOWN) {
+
+        running = false;
+
+    }
 }
 
 
@@ -75,6 +84,10 @@ int main(int argc, char *argv[]) {
             sleep(2);            
         }
 
+        task_t task_data;
+        task_data.task_type = SHUTDOWN;
+        task_topic_publish(&tasks_publisher, &task_data);
+
         publisher_cleanup(&tasks_publisher, &domain_participant);
 
     } else {
@@ -91,7 +104,7 @@ int main(int argc, char *argv[]) {
 
         task_topic_listen(&tasks_listener, &schedule_new_task);
 
-        for (int i = 0; i < 15; ++i) {
+        while (running) {
             sleep(2);
         }
 
