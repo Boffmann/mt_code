@@ -8,4 +8,10 @@ module RevPiDDS {
     long decisionID;
   };
   #pragma keylist Decision decisionID
+
+  struct State {
+    long timestamp;
+    double speed;
+  };
+  #pragma keylist State timestamp
 };
