@@ -3,8 +3,6 @@
 #include "topic.h"
 #include "CheckStatus.h"
 
-
-
 domain_participant_t domain_participant_create_new(char* partition_name) {
 
     domain_participant_t new_participant;
@@ -28,15 +26,18 @@ domain_participant_t domain_participant_create_new(char* partition_name) {
     return new_participant;
 }
 
+DDS_TopicQos* get_default_domain_topic_qos(const domain_participant_t* domain_participant) {
+
+    DDS_TopicQos* topic_qos = DDS_TopicQos__alloc();
+    checkHandle(topic_qos, "DDS_TopicQos__alloc");
+    DDS_ReturnCode_t status = DDS_DomainParticipant_get_default_topic_qos(domain_participant->dds_domainParticipant, topic_qos);
+    checkStatus(status, "DDS_DomainParticipant_get_default_topic_qos");
+
+    return topic_qos;
+}
+
 void domain_participant_delete(const domain_participant_t* domain_participant) {
     DDS_ReturnCode_t status = DDS_DomainParticipantFactory_delete_participant(domain_participant->domain_participant_factory, domain_participant->dds_domainParticipant);
     checkStatus(status, "DDS_DomainParticipantFactory_delete_participant");
 }
 
-// BEGIN REGION Library Interface Functions
-
-domain_participant_t setup_dds_domain(char* partition_name) {
-    return domain_participant_create_new(partition_name);
-} 
-
-// END REGION Library Interface Functions

@@ -27,7 +27,11 @@ typedef struct {
  * 
  * @return A new listener that listens for new messages on the specified topic
  */
-listener_t listener_create_new(const domain_participant_t* domain_participant, const topic_t* topic);
+listener_t listener_create_new(const domain_participant_t* domain_participant, const DDS_SubscriberQos* sub_qos);
+
+void listener_create_dataReader_new(listener_t* listener, const DDS_DataReaderQos* dr_qos, const topic_t* topic);
+
+DDS_SubscriberQos* get_default_subscriber_qos(const domain_participant_t* domain_participant);
 
 /**
  * @brief Frees all resources kept by the listener

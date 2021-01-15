@@ -18,7 +18,7 @@ void schedule_new_task(const task_t* task_data) {
 
 
 DDS_TopicQos* create_topic_qos(const domain_participant_t* domain_participant) {
-    DDS_TopicQos* topic_qos = get_default_topic_qos(domain_participant);
+    DDS_TopicQos* topic_qos = get_default_domain_topic_qos(domain_participant);
     topic_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
     topic_qos->durability.kind = DDS_TRANSIENT_DURABILITY_QOS;
 
@@ -45,11 +45,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    domain_participant_t domain_participant = setup_dds_domain("Test_Partition");
+    domain_participant_t domain_participant = domain_participant_create_new("Test_Partition");
 
     DDS_TopicQos* topic_qos = create_topic_qos(&domain_participant);
 
-    topic_t tasks_topic = join_topic(&domain_participant, topic_qos, TASKS);
+    topic_t tasks_topic = topic_join(&domain_participant, topic_qos, TASKS);
 
     DDS_free(topic_qos);
 
@@ -57,7 +57,13 @@ int main(int argc, char *argv[]) {
 
         printf("Publishing Mode\n");
 
-        publisher_t tasks_publisher = add_publisher(&domain_participant, &tasks_topic);
+        // publisher_t tasks_publisher = add_publisher(&domain_participant, &tasks_topic);
+        DDS_PublisherQos* tasks_publisher_qos = get_default_publisher_qos(&domain_participant);
+        publisher_t tasks_publisher = publisher_create_new(&domain_participant, tasks_publisher_qos);
+        DDS_free(tasks_publisher_qos);
+        DDS_DataWriterQos* tasks_dw_qos = dw_qos_copy_from_topic_qos(&tasks_publisher, &tasks_topic);
+        publisher_dataWriter_create_new(&tasks_publisher, tasks_dw_qos, &tasks_topic);
+        DDS_free(tasks_dw_qos);
 
         for (int i = 0; i < 10; ++i) {
 
@@ -76,7 +82,13 @@ int main(int argc, char *argv[]) {
 
         printf("Listening Mode\n");
 
-        listener_t tasks_listener = add_listener(&domain_participant, &tasks_topic);
+        DDS_SubscriberQos* sub_qos = get_default_subscriber_qos(&domain_participant);
+        listener_t tasks_listener = listener_create_new(&domain_participant, sub_qos);
+        DDS_free(sub_qos);
+        DDS_DataReaderQos* dr_qos = dr_qos_copy_from_topic_qos(&tasks_listener, &tasks_topic);
+        listener_create_dataReader_new(&tasks_listener, dr_qos, &tasks_topic);
+        DDS_free(dr_qos);
+
 
         task_topic_listen(&tasks_listener, &schedule_new_task);
 

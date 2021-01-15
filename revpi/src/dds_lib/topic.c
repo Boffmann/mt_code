@@ -16,7 +16,7 @@ typedef struct {
 
 // BEGIN REGION Library Interface Functions
 
-topic_t join_topic(domain_participant_t* domain_participant, const DDS_TopicQos* topic_qos, const TopicType type) {
+topic_t topic_join(domain_participant_t* domain_participant, const DDS_TopicQos* topic_qos, const TopicType type) {
 
     switch (type) {
     case ACTORS:
@@ -29,15 +29,6 @@ topic_t join_topic(domain_participant_t* domain_participant, const DDS_TopicQos*
     return tasks_topic_create(domain_participant, topic_qos);
 }
 
-DDS_TopicQos* get_default_topic_qos(const domain_participant_t* domain_participant) {
-
-    DDS_TopicQos* topic_qos = DDS_TopicQos__alloc();
-    checkHandle(topic_qos, "DDS_TopicQos__alloc");
-    DDS_ReturnCode_t status = DDS_DomainParticipant_get_default_topic_qos(domain_participant->dds_domainParticipant, topic_qos);
-    checkStatus(status, "DDS_DomainParticipant_get_default_topic_qos");
-
-    return topic_qos;
-}
 
 // END REGION Library Interface Functions
 

@@ -29,6 +29,8 @@ typedef struct {
  */
 domain_participant_t domain_participant_create_new(char* partition_name);
 
+DDS_TopicQos* get_default_domain_topic_qos(const domain_participant_t* domain_participant);
+
 /**
  * @brief Leaves DDS domain and frees resources kept by the domain participant.
  * 

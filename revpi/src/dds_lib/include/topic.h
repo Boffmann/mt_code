@@ -28,6 +28,20 @@ typedef struct {
 } topic_t;
 
 /**
+ * @brief Join a new topic
+ * 
+ * This creates the topic with the specified role.
+ * This method should be preferred over "topic_create_new"
+ * 
+ * @param domain_participant Handle to a participant in the same partition as topic
+ * @param topic_qos The Quality of services that the topic should have
+ * @param type The type of the newly cdreated topic
+ * 
+ * @return A new topic
+ */
+topic_t topic_join(domain_participant_t* domain_participant, const DDS_TopicQos* topic_qos, const TopicType type);
+
+/**
  * @brief Create a new topic
  * 
  * @param domain_participant Handle to a participant in the same partition that this topic should be created in.

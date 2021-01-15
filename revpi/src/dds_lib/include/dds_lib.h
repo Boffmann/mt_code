@@ -13,18 +13,13 @@
 #include "publisher.h"
 #include "listener.h"
 
-/**
- * Sets up the entire DDS domain.
- * This includes the DDS domain, as well as involved DDS domain participants.
- */
-domain_participant_t setup_dds_domain(char* partition_name);
 
-topic_t join_topic(domain_participant_t* domain_participant, const DDS_TopicQos* topic_qos, const TopicType type);
 
-publisher_t add_publisher(const domain_participant_t* domain_participant, const topic_t* topic);
 
-listener_t add_listener(const domain_participant_t* domain_participant, const topic_t* topic);
 
-DDS_TopicQos* get_default_topic_qos(const domain_participant_t* domain_participant);
+
+DDS_DataWriterQos* dw_qos_copy_from_topic_qos(const publisher_t* publisher, const topic_t* topic);
+
+DDS_DataReaderQos* dr_qos_copy_from_topic_qos(const listener_t* listener, const topic_t* topic);
 
 #endif
