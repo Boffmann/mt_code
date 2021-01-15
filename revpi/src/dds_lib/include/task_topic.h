@@ -19,7 +19,6 @@ struct task_listener_data_t;
  */
 typedef struct {
     long task_id;   ///< TODO
-    char* message;
 } task_t;
 
 /// Typedef for function pointer signature that is used for a callback when new task data arrives

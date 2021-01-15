@@ -22,8 +22,8 @@ set(generated_path "${CMAKE_BINARY_DIR}/gen")
 set(datamodel_lib datamodel)
 
 set(sources
-  ${source_path}/actor_topic.c
   ${source_path}/CheckStatus.c
+  ${source_path}/decision_topic.c
   ${source_path}/domain_participant.c
   ${source_path}/listener.c
   ${source_path}/publisher.c

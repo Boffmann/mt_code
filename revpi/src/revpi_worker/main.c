@@ -20,7 +20,7 @@ void schedule_new_task(const task_t* task_data) {
 DDS_TopicQos* create_topic_qos(const domain_participant_t* domain_participant) {
     DDS_TopicQos* topic_qos = get_default_domain_topic_qos(domain_participant);
     topic_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topic_qos->durability.kind = DDS_TRANSIENT_DURABILITY_QOS;
+    topic_qos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
 
     return topic_qos;
 }
@@ -68,7 +68,6 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < 10; ++i) {
 
             task_t task_data;
-            task_data.message = "Some task data";
             task_data.task_id = i;
             task_topic_publish(&tasks_publisher, &task_data);
             printf("Published: %d\n", i);

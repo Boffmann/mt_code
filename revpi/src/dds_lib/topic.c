@@ -1,5 +1,5 @@
 #include "topic.h"
-#include "actor_topic.h"
+#include "decision_topic.h"
 #include "task_topic.h"
 #include "CheckStatus.h"
 
@@ -19,8 +19,8 @@ typedef struct {
 topic_t topic_join(domain_participant_t* domain_participant, const DDS_TopicQos* topic_qos, const TopicType type) {
 
     switch (type) {
-    case ACTORS:
-        return actors_topic_create(domain_participant, topic_qos);
+    case DECISIONS:
+        return decision_topic_create(domain_participant, topic_qos);
         break;
     default:
         return tasks_topic_create(domain_participant, topic_qos);

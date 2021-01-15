@@ -36,7 +36,6 @@ void on_task_data_available(void* listener_data, DDS_DataReader reader) {
         if( message_infoSeq->_buffer[0].valid_data == TRUE ) {
         printf( "\n    --- message received ---" );
         printf( "\n    userID  : %d", message_seq->_buffer[0].taskID );
-        printf( "\n    Message : \"%s\"", message_seq->_buffer[0].message );
         taskid = message_seq->_buffer[0].taskID;
         }
     }
@@ -91,7 +90,6 @@ void task_topic_publish(const publisher_t* publisher, const task_t* task_data) {
     RevPiDDS_Tasks *message = RevPiDDS_Tasks__alloc();
     checkHandle(message, "RevPiDDS_Tasks__alloc");
     message->taskID = task_data->task_id;
-    message->message = task_data->message;
     DDS_InstanceHandle_t message_handle = RevPiDDS_TasksDataWriter_register_instance(publisher->dds_dataWriter, message);
 
     DDS_ReturnCode_t status = RevPiDDS_TasksDataWriter_write(publisher->dds_dataWriter, message, message_handle);

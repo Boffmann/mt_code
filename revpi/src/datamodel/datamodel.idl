@@ -1,12 +1,11 @@
 module RevPiDDS {
   struct Tasks {
     long taskID;
-    string message;
   };
   #pragma keylist Tasks taskID
 
   struct Decision {
-    string message;
+    long decisionID;
   };
-  #pragma keylist Decision message
+  #pragma keylist Decision decisionID
 };
