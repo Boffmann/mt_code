@@ -9,6 +9,13 @@
 
 // Type forward declaration
 struct task_listener_data_t;
+typedef enum {
+
+    NONE = 0,
+    SHUTDOWN = 1,
+    SPEED_MONITORING = 2
+
+} TaskType;
 
 /**
  * @brief Represents a topic that stores task information.
@@ -18,7 +25,7 @@ struct task_listener_data_t;
  * publish its decision
  */
 typedef struct {
-    long task_id;   ///< TODO
+    TaskType task_type;   ///< TODO
 } task_t;
 
 /// Typedef for function pointer signature that is used for a callback when new task data arrives

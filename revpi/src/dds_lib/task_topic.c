@@ -29,26 +29,24 @@ void on_task_data_available(void* listener_data, DDS_DataReader reader) {
         DDS_ANY_INSTANCE_STATE);
     checkStatus(status, "RevPiDDS_TasksDataReader_read");
 
-    long taskid = 0;
+    TaskType task_type = NONE;
 
     if ( message_seq->_length > 0 ) {
         printf( "\n=== [ListenerListener::on_data_available] - message_seq->length : %d", message_seq->_length );
         if( message_infoSeq->_buffer[0].valid_data == TRUE ) {
         printf( "\n    --- message received ---" );
-        printf( "\n    userID  : %d", message_seq->_buffer[0].taskID );
-        taskid = message_seq->_buffer[0].taskID;
+        printf( "\n    userID  : %d", message_seq->_buffer[0].taskType );
+        task_type = message_seq->_buffer[0].taskType;
         }
     }
-
 
     status = RevPiDDS_TasksDataReader_return_loan(reader, message_seq, message_infoSeq);
     checkStatus(status, "RevPiDDS_TasksDataReader_return_loan");
 
-
-    if (taskid != 0) {
+    if (task_type != NONE) {
         printf("\n Calling callback...\n");
         task_t task_data;
-        task_data.task_id = taskid;
+        task_data.task_type = task_type;
         on_task_data_available_callback(&task_data);
     }
 
@@ -89,13 +87,13 @@ void task_topic_publish(const publisher_t* publisher, const task_t* task_data) {
 
     RevPiDDS_Tasks *message = RevPiDDS_Tasks__alloc();
     checkHandle(message, "RevPiDDS_Tasks__alloc");
-    message->taskID = task_data->task_id;
+    message->taskType = task_data->task_type;
     DDS_InstanceHandle_t message_handle = RevPiDDS_TasksDataWriter_register_instance(publisher->dds_dataWriter, message);
 
     DDS_ReturnCode_t status = RevPiDDS_TasksDataWriter_write(publisher->dds_dataWriter, message, message_handle);
     checkStatus(status, "RevPiDDS_TasksDataWriter_write");
 
-    printf("Finished publishing %ld\n", task_data->task_id);
+    printf("Finished publishing %d\n", task_data->task_type);
     printf("Used data writer: %p\n", (void*)&publisher->dds_dataWriter);
 
     // Dispose and unregister message
@@ -132,7 +130,7 @@ bool task_topic_read(const subscriber_t* subscriber, task_t* task_data) {
 
     if ( message_sequence->_length > 0 ) {
         if(info_sequence->_buffer[0].valid_data == TRUE ) {
-            taskid = message_sequence->_buffer[0].taskID;
+            taskid = message_sequence->_buffer[0].taskType;
             task_valid = true;
         }
     }
@@ -141,7 +139,7 @@ bool task_topic_read(const subscriber_t* subscriber, task_t* task_data) {
     checkStatus(status, "RevPiDDS_TasksDataReader_return_loan");
 
     if (task_valid) {
-        task_data->task_id = taskid;
+        task_data->task_type = taskid;
     }
 
     return task_valid;

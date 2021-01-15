@@ -13,7 +13,7 @@ typedef enum {
 void schedule_new_task(const task_t* task_data) {
     printf("THIS IS THE TASK DATA CALLBACK\n");
 
-    printf("RECEIVED THIS TASK ID: %ld\n", task_data->task_id);
+    printf("RECEIVED THIS TASK ID: %d\n", task_data->task_type);
 }
 
 
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < 10; ++i) {
 
             task_t task_data;
-            task_data.task_id = i;
+            task_data.task_type = SPEED_MONITORING;
             task_topic_publish(&tasks_publisher, &task_data);
             printf("Published: %d\n", i);
 
