@@ -5,12 +5,6 @@ module RevPiDDS {
   };
   #pragma keylist Tasks taskID
 
-  struct Actors {
-    string address;
-    string role;
-  };
-  #pragma keylist Actors address
-
   struct Decision {
     string message;
   };
