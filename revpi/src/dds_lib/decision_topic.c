@@ -8,6 +8,7 @@ typedef struct {
     DDS_DataReader* decision_data_reader;
 } decision_listener_data_t;
 
+// TODO Also include is_deciusion_valid boolean in callback
 void on_decision_data_available(void* listener_data, DDS_DataReader reader) {
     // Unused parameter
     (void) listener_data;
@@ -100,16 +101,56 @@ void decision_topic_publish(const publisher_t* publisher, const decision_t* deci
 
 }
 
+bool decision_topic_read(const subscriber_t* subscriber, decision_t* decision_data) {
+
+    bool decision_valid = false;
+
+    DDS_sequence_RevPiDDS_Decision* message_sequence = DDS_sequence_RevPiDDS_Decision__alloc();
+    checkHandle(message_sequence, "DDS_sequence_RevPiDDS_Decision__alloc");
+    DDS_SampleInfoSeq* info_sequence = DDS_SampleInfoSeq__alloc();
+    checkHandle(info_sequence, "DDS_SampleInfoSeq__alloc");
+
+    DDS_ReturnCode_t status = RevPiDDS_DecisionDataReader_take(
+        subscriber->dds_dataReader,
+        message_sequence,
+        info_sequence,
+        DDS_LENGTH_UNLIMITED,
+        DDS_ANY_SAMPLE_STATE,
+        DDS_ANY_VIEW_STATE,
+        DDS_ALIVE_INSTANCE_STATE
+    );
+    checkStatus(status, "RevPiDDS_DecisionDataReader_take");
+
+    long decisionid = 0;
+
+    if ( message_sequence->_length > 0 ) {
+        if(info_sequence->_buffer[0].valid_data == TRUE ) {
+            decisionid = message_sequence->_buffer[0].decisionID;
+            decision_valid = true;
+        }
+    }
+
+    status = RevPiDDS_DecisionDataReader_return_loan(subscriber->dds_dataReader, message_sequence, info_sequence);
+    checkStatus(status, "RevPiDDS_DecisionDataReader_return_loan");
+
+    if (decision_valid) {
+        decision_data->decision_id = decisionid;
+    }
+
+    return decision_valid;
+
+}
+
 void decision_topic_listen(listener_t* listener, on_decision_data_available_t callback) {
 
     decision_listener_data_t* listener_data = malloc(sizeof(decision_listener_data_t));
     checkHandle(listener_data, "malloc");
-    listener_data->decision_data_reader = &listener->dds_dataReader;
+    listener_data->decision_data_reader = &listener->subscriber.dds_dataReader;
     listener->dds_listener->listener_data = listener_data;
     listener->dds_listener->on_data_available = &on_decision_data_available;
 
     DDS_StatusMask mask = DDS_DATA_AVAILABLE_STATUS | DDS_REQUESTED_DEADLINE_MISSED_STATUS;
-    DDS_ReturnCode_t status = DDS_DataReader_set_listener(listener->dds_dataReader, listener->dds_listener, mask);
+    DDS_ReturnCode_t status = DDS_DataReader_set_listener(listener->subscriber.dds_dataReader, listener->dds_listener, mask);
     checkStatus(status, "DDS_DataReader_set_listener");
 
     on_decision_data_available_callback = callback;

@@ -3,6 +3,7 @@
 
 #include "dds_dcps.h"
 #include "domain_participant.h"
+#include "subscriber.h"
 #include "topic.h"
 
 /**
@@ -12,8 +13,7 @@
  * allow to inform about new messages arriving at a topic.
  */
 typedef struct {
-    DDS_Subscriber dds_subscriber;                  ///< The DDS subscriber used to subscribe to a topic
-    DDS_DataReader dds_dataReader;                  ///< DDS DataReader used to read data on a topic
+    subscriber_t subscriber;
     struct DDS_DataReaderListener *dds_listener;    ///< Listener to call callback when new data arrives at topic.
 } listener_t;
 
@@ -31,14 +31,12 @@ listener_t listener_create_new(const domain_participant_t* domain_participant, c
 
 void listener_create_dataReader_new(listener_t* listener, const DDS_DataReaderQos* dr_qos, const topic_t* topic);
 
-DDS_SubscriberQos* get_default_subscriber_qos(const domain_participant_t* domain_participant);
-
 /**
  * @brief Frees all resources kept by the listener
  * 
  * @param listener Handle to the listener to delete
  * @param domain_participant Handle to a participant used to create this listener
  */
-void listener_cleanup(const listener_t* listener, const domain_participant_t* domain_participant);
+void listener_cleanup(listener_t* listener, const domain_participant_t* domain_participant);
 
 #endif

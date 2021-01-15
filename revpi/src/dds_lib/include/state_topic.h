@@ -23,6 +23,8 @@ topic_t state_topic_create(const domain_participant_t* domain_participant, const
 
 void state_topic_publish(const publisher_t* publisher, const state_t* state_data);
 
+bool state_topic_read(const subscriber_t* subscriber, state_t* state_data);
+
 void state_topic_listen(listener_t* listener, on_state_data_available_t callback);
 
 #endif

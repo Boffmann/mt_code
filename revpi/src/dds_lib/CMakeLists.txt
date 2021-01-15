@@ -28,6 +28,7 @@ set(sources
   ${source_path}/listener.c
   ${source_path}/publisher.c
   ${source_path}/state_topic.c
+  ${source_path}/subscriber.c
   ${source_path}/task_topic.c
   ${source_path}/topic.c
 )

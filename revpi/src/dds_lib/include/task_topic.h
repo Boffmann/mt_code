@@ -44,6 +44,8 @@ topic_t tasks_topic_create(const domain_participant_t* domain_participant, const
  */
 void task_topic_publish(const publisher_t* publisher, const task_t* task_data);
 
+bool task_topic_read(const subscriber_t* subscriber, task_t* task_data);
+
 /**
  * @brief Register a listener to a task topic
  * 
