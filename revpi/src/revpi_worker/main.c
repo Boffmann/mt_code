@@ -1,5 +1,6 @@
 #include "dds_lib/include/dds_lib.h"
 #include "dds_lib/include/task_topic.h"
+#include "DIO.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
