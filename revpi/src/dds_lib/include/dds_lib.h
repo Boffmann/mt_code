@@ -20,6 +20,6 @@
 
 DDS_DataWriterQos* dw_qos_copy_from_topic_qos(const publisher_t* publisher, const topic_t* topic);
 
-DDS_DataReaderQos* dr_qos_copy_from_topic_qos(const listener_t* listener, const topic_t* topic);
+DDS_DataReaderQos* dr_qos_copy_from_topic_qos(const subscriber_t* subscriber, const topic_t* topic);
 
 #endif

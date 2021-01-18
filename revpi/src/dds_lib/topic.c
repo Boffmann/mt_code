@@ -1,6 +1,7 @@
 #include "topic.h"
 #include "decision_topic.h"
 #include "task_topic.h"
+#include "state_topic.h"
 #include "CheckStatus.h"
 
 // Attribute structure
@@ -22,8 +23,13 @@ topic_t topic_join(domain_participant_t* domain_participant, const DDS_TopicQos*
     case DECISIONS:
         return decision_topic_create(domain_participant, topic_qos);
         break;
-    default:
+    case STATE:
+        return state_topic_create(domain_participant, topic_qos);
+        break;
+    case TASKS:
         return tasks_topic_create(domain_participant, topic_qos);
+    default:
+        printf("ERROR: The specified topic type does not exist\n");
         break;
     }
     return tasks_topic_create(domain_participant, topic_qos);

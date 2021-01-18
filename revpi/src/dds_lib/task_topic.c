@@ -4,23 +4,23 @@
 
 on_task_data_available_t on_task_data_available_callback = NULL;
 
-/**
- * @brief Represents a listener that is specific for the Task Topic.
- */
-typedef struct {
-    DDS_DataReader* task_data_reader;   ///< Data Reader that reads data specific to TASK topic.
-} task_listener_data_t;
-
 void on_task_data_available(void* listener_data, DDS_DataReader reader) {
-    // Unused parameter
-    (void) listener_data;
+
+    listener_data_t*    listener_state;
     DDS_ReturnCode_t status;
-    DDS_sequence_RevPiDDS_Tasks* message_seq = DDS_sequence_RevPiDDS_Tasks__alloc();
-    DDS_SampleInfoSeq* message_infoSeq = DDS_SampleInfoSeq__alloc();
+    DDS_sequence_RevPiDDS_Tasks* message_seq;
+    DDS_SampleInfoSeq* message_infoSeq;
+    (void) reader; // Unused
+
+    listener_state = (listener_data_t*) listener_data;
+
+    message_seq = DDS_sequence_RevPiDDS_Tasks__alloc();
+    message_infoSeq = DDS_SampleInfoSeq__alloc();
 
     printf("Got a message:\n");
 
-    status = RevPiDDS_TasksDataReader_read(reader,
+    status = RevPiDDS_TasksDataReader_read(
+        listener_state->task_data_reader,
         message_seq,
         message_infoSeq,
         DDS_LENGTH_UNLIMITED,
@@ -49,6 +49,9 @@ void on_task_data_available(void* listener_data, DDS_DataReader reader) {
         task_data.task_type = task_type;
         on_task_data_available_callback(&task_data);
     }
+
+    DDS_free(message_seq);
+    DDS_free(message_infoSeq);
 
 }
 
@@ -93,7 +96,7 @@ void task_topic_publish(const publisher_t* publisher, const task_t* task_data) {
     DDS_ReturnCode_t status = RevPiDDS_TasksDataWriter_write(publisher->dds_dataWriter, message, message_handle);
     checkStatus(status, "RevPiDDS_TasksDataWriter_write");
 
-    printf("Finished publishing %d\n", task_data->task_type);
+    printf("Finished publishing task %d\n", task_data->task_type);
     printf("Used data writer: %p\n", (void*)&publisher->dds_dataWriter);
 
     // Dispose and unregister message
@@ -142,21 +145,23 @@ bool task_topic_read(const subscriber_t* subscriber, task_t* task_data) {
         task_data->task_type = taskid;
     }
 
+    DDS_free(message_sequence);
+    DDS_free(info_sequence);
+
     return task_valid;
 }
 
 void task_topic_listen(listener_t* listener, on_task_data_available_t callback) {
 
-    task_listener_data_t* listener_data = malloc(sizeof(task_listener_data_t));
-    checkHandle(listener_data, "malloc");
-    listener_data->task_data_reader = &listener->subscriber.dds_dataReader;
-    listener->dds_listener->listener_data = listener_data;
+    listener->listener_data->task_data_reader = listener->subscriber.dds_dataReader;
+    listener->dds_listener->listener_data = listener->listener_data;
+    listener->listener_data = listener->listener_data;
     listener->dds_listener->on_data_available = &on_task_data_available;
 
-    DDS_StatusMask mask = DDS_DATA_AVAILABLE_STATUS | DDS_REQUESTED_DEADLINE_MISSED_STATUS;
+    // TODO Verify mask and check for most suitable values
+    DDS_StatusMask mask = DDS_DATA_AVAILABLE_STATUS;
     DDS_ReturnCode_t status = DDS_DataReader_set_listener(listener->subscriber.dds_dataReader, listener->dds_listener, mask);
     checkStatus(status, "DDS_DataReader_set_listener");
-
 
     on_task_data_available_callback = callback;
 

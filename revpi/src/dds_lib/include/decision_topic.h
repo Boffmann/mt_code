@@ -10,7 +10,7 @@
 #include "listener.h"
 
 // Type forward declaration
-struct decision_listener_data_t;
+// struct decision_listener_data_t;
 
 typedef struct {
     long decision_id;

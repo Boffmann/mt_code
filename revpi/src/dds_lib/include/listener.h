@@ -2,9 +2,16 @@
 #define __RASPI_DDSLIB_LISTENER_H__
 
 #include "dds_dcps.h"
+#include "datamodelSacDcps.h"
 #include "domain_participant.h"
 #include "subscriber.h"
 #include "topic.h"
+
+typedef struct {
+    RevPiDDS_DecisionDataReader     decision_data_reader;
+    RevPiDDS_StateDataReader        state_data_reader;
+    RevPiDDS_TasksDataReader        task_data_reader;
+} listener_data_t;
 
 /**
  * @brief Represents a listener that listens for new messages on a topic.
@@ -15,7 +22,9 @@
 typedef struct {
     subscriber_t subscriber;
     struct DDS_DataReaderListener *dds_listener;    ///< Listener to call callback when new data arrives at topic.
+    listener_data_t* listener_data;                            ///< Pointer to the listener data. It's important to use a listener for one topic only
 } listener_t;
+
 
 /**
  * @brief Create a new listener to listen on a topic.

@@ -4,21 +4,23 @@
 
 on_decision_data_available_t on_decision_data_available_callback = NULL;
 
-typedef struct {
-    DDS_DataReader* decision_data_reader;
-} decision_listener_data_t;
-
 // TODO Also include is_deciusion_valid boolean in callback
 void on_decision_data_available(void* listener_data, DDS_DataReader reader) {
-    // Unused parameter
-    (void) listener_data;
+    listener_data_t* listener_state;
     DDS_ReturnCode_t status;
-    DDS_sequence_RevPiDDS_Decision* message_seq = DDS_sequence_RevPiDDS_Decision__alloc();
-    DDS_SampleInfoSeq* message_infoSeq = DDS_SampleInfoSeq__alloc();
+    DDS_sequence_RevPiDDS_Decision* message_seq;
+    DDS_SampleInfoSeq* message_infoSeq;
+    (void) reader;      // Unused
+
+    listener_state = (listener_data_t*) listener_data;
+
+    message_seq = DDS_sequence_RevPiDDS_Decision__alloc();
+    message_infoSeq = DDS_SampleInfoSeq__alloc();
 
     printf("Got a decision message:\n");
 
-    status = RevPiDDS_DecisionDataReader_read(reader,
+    status = RevPiDDS_DecisionDataReader_read(
+        listener_state->decision_data_reader,
         message_seq,
         message_infoSeq,
         DDS_LENGTH_UNLIMITED,
@@ -45,6 +47,9 @@ void on_decision_data_available(void* listener_data, DDS_DataReader reader) {
         decision_data.decision_id = decisionid;
         on_decision_data_available_callback(&decision_data);
     }
+
+    DDS_free(message_seq);
+    DDS_free(message_infoSeq);
 
 }
 
@@ -88,7 +93,7 @@ void decision_topic_publish(const publisher_t* publisher, const decision_t* deci
     DDS_ReturnCode_t status = RevPiDDS_DecisionDataWriter_write(publisher->dds_dataWriter, message, message_handle);
     checkStatus(status, "RevPiDDS_DecisionDataWriter_write");
 
-    printf("Finished publishing %ld\n", decision_data->decision_id);
+    printf("Finished publishing decision %ld\n", decision_data->decision_id);
     printf("Used data writer: %p\n", (void*)&publisher->dds_dataWriter);
 
     // Dispose and unregister message
@@ -137,16 +142,18 @@ bool decision_topic_read(const subscriber_t* subscriber, decision_t* decision_da
         decision_data->decision_id = decisionid;
     }
 
+    DDS_free(message_sequence);
+    DDS_free(info_sequence);
+
     return decision_valid;
 
 }
 
 void decision_topic_listen(listener_t* listener, on_decision_data_available_t callback) {
 
-    decision_listener_data_t* listener_data = malloc(sizeof(decision_listener_data_t));
-    checkHandle(listener_data, "malloc");
-    listener_data->decision_data_reader = &listener->subscriber.dds_dataReader;
-    listener->dds_listener->listener_data = listener_data;
+    listener->listener_data->decision_data_reader = listener->subscriber.dds_dataReader;
+    listener->dds_listener->listener_data = listener->listener_data;
+    listener->listener_data = listener->listener_data;
     listener->dds_listener->on_data_available = &on_decision_data_available;
 
     DDS_StatusMask mask = DDS_DATA_AVAILABLE_STATUS | DDS_REQUESTED_DEADLINE_MISSED_STATUS;

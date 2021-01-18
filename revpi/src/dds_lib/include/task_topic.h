@@ -8,7 +8,7 @@
 #include "publisher.h"
 
 // Type forward declaration
-struct task_listener_data_t;
+// struct task_listener_data_t;
 typedef enum {
 
     NONE = 0,

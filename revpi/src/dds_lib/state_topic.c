@@ -4,20 +4,24 @@
 
 on_state_data_available_t on_state_data_available_callback = NULL;
 
-typedef struct {
-    DDS_DataReader* state_data_reader;
-} state_listener_data_t;
-
 void on_state_data_available(void* listener_data, DDS_DataReader reader) {
+
+    listener_data_t*                listener_state;
+    DDS_ReturnCode_t                status;
+    DDS_sequence_RevPiDDS_State*    message_seq;
+    DDS_SampleInfoSeq*              message_infoSeq;
+    long                            timestamp;
+    (void)                          reader;             // Unused
+
     // Unused parameter
-    (void) listener_data;
-    DDS_ReturnCode_t status;
-    DDS_sequence_RevPiDDS_State* message_seq = DDS_sequence_RevPiDDS_State__alloc();
-    DDS_SampleInfoSeq* message_infoSeq = DDS_SampleInfoSeq__alloc();
+    listener_state = (listener_data_t*) listener_data;
+    message_seq = DDS_sequence_RevPiDDS_State__alloc();
+    message_infoSeq = DDS_SampleInfoSeq__alloc();
 
     printf("Got a state message:\n");
 
-    status = RevPiDDS_StateDataReader_read(reader,
+    status = RevPiDDS_StateDataReader_read(
+        listener_state->state_data_reader,
         message_seq,
         message_infoSeq,
         DDS_LENGTH_UNLIMITED,
@@ -26,7 +30,7 @@ void on_state_data_available(void* listener_data, DDS_DataReader reader) {
         DDS_ANY_INSTANCE_STATE);
     checkStatus(status, "RevPiDDS_StateDataReader_read");
 
-    long timestamp = 0;
+    timestamp = 0;
 
     if ( message_seq->_length > 0 ) {
         printf( "\n=== [ListenerListener::on_data_available] - message_seq->length : %d", message_seq->_length );
@@ -46,6 +50,9 @@ void on_state_data_available(void* listener_data, DDS_DataReader reader) {
         state_data.timestamp = timestamp;
         on_state_data_available_callback(&state_data);
     }
+
+    DDS_free(message_seq);
+    DDS_free(message_infoSeq);
 
 }
 
@@ -79,26 +86,41 @@ topic_t state_topic_create(const domain_participant_t* domain_participant, const
     return new_topic;
 }
 
-void state_topic_publish(const publisher_t* publisher, const state_t* state_data) {
+dds_state_instance_t state_topic_create_new_instance(const publisher_t* publisher) {
 
-    RevPiDDS_State *message = RevPiDDS_State__alloc();
-    checkHandle(message, "RevPiDDS_State__alloc");
-    message->timestamp = state_data->timestamp;
-    DDS_InstanceHandle_t message_handle = RevPiDDS_StateDataWriter_register_instance(publisher->dds_dataWriter, message);
+    dds_state_instance_t new_state_instance;
 
-    DDS_ReturnCode_t status = RevPiDDS_StateDataWriter_write(publisher->dds_dataWriter, message, message_handle);
-    checkStatus(status, "RevPiDDS_StateDataWriter_write");
+    new_state_instance.message = RevPiDDS_State__alloc();
+    checkHandle(new_state_instance.message, "RevPiDDS_State__alloc");
+    new_state_instance.message_handle = RevPiDDS_StateDataWriter_register_instance(publisher->dds_dataWriter, new_state_instance.message);
 
-    printf("Finished publishing %ld\n", state_data->timestamp);
-    printf("Used data writer: %p\n", (void*)&publisher->dds_dataWriter);
+    return new_state_instance;
+}
+
+void state_topic_dispose_instance(const publisher_t* publisher, dds_state_instance_t* state_instance) {
 
     // Dispose and unregister message
-    status = RevPiDDS_StateDataWriter_dispose(publisher->dds_dataWriter, message, message_handle);
+    DDS_ReturnCode_t status = RevPiDDS_StateDataWriter_dispose(publisher->dds_dataWriter, state_instance->message, state_instance->message_handle);
     checkStatus(status,"RevPiDDS_StateDataWriter_dispose");
-    status = RevPiDDS_StateDataWriter_unregister_instance(publisher->dds_dataWriter, message, message_handle);
+    status = RevPiDDS_StateDataWriter_unregister_instance(publisher->dds_dataWriter, state_instance->message, state_instance->message_handle);
     checkStatus(status,"RevPiDDS_StateDataWriter_unregister_instance");
 
-    DDS_free(message);
+    DDS_free(state_instance->message);
+}
+
+void state_topic_publish(const publisher_t* publisher, dds_state_instance_t* state_instance) {
+
+    // state_instance->message->timestamp = state_data->timestamp;
+    // state_instance->message->speed = state_data->speed;
+
+    state_instance->message_handle = RevPiDDS_StateDataWriter_register_instance(publisher->dds_dataWriter, state_instance->message);
+
+    DDS_ReturnCode_t status = RevPiDDS_StateDataWriter_write(publisher->dds_dataWriter, state_instance->message, state_instance->message_handle);
+    checkStatus(status, "RevPiDDS_StateDataWriter_write");
+
+    // printf("Finished publishing state %ld with speed %f\n", state_data->timestamp, state_data->speed);
+    // printf("Used data writer: %p\n", (void*)&publisher->dds_dataWriter);
+
 
 }
 
@@ -111,7 +133,7 @@ bool state_topic_read(const subscriber_t* subscriber, state_t* state_data) {
     DDS_SampleInfoSeq* info_sequence = DDS_SampleInfoSeq__alloc();
     checkHandle(info_sequence, "DDS_SampleInfoSeq__alloc");
 
-    DDS_ReturnCode_t status = RevPiDDS_StateDataReader_take(
+    DDS_ReturnCode_t status = RevPiDDS_StateDataReader_read(
         subscriber->dds_dataReader,
         message_sequence,
         info_sequence,
@@ -120,19 +142,30 @@ bool state_topic_read(const subscriber_t* subscriber, state_t* state_data) {
         DDS_ANY_VIEW_STATE,
         DDS_ALIVE_INSTANCE_STATE
     );
-    checkStatus(status, "RevPiDDS_DecisionDataReader_take");
+    checkStatus(status, "RevPiDDS_StateDataReader_read");
 
     long timestamp = 0;
     double speed = 0.0;
+    printf("Got state info of length %d\n", message_sequence->_length);
 
-    if ( message_sequence->_length > 0 ) {
-        int message_index = message_sequence->_length - 1;
-        if(info_sequence->_buffer[message_index].valid_data == TRUE ) {
-            timestamp = message_sequence->_buffer[message_index].timestamp;
-            speed = message_sequence->_buffer[message_index].speed;
+    for (DDS_unsigned_long i = 0; i < message_sequence->_length; ++i) {
+
+        if (info_sequence->_buffer[i].valid_data) {
             state_valid = true;
+            printf("Speed at: %d id %f\n", i, message_sequence->_buffer[i].speed);
+            speed = message_sequence->_buffer[i].speed;
         }
+
     }
+
+    // if ( message_sequence->_length > 0 ) {
+    //     int message_index = message_sequence->_length - 1;
+    //     if(info_sequence->_buffer[message_index].valid_data == TRUE ) {
+    //         timestamp = message_sequence->_buffer[message_index].timestamp;
+    //         speed = message_sequence->_buffer[message_index].speed;
+    //         state_valid = true;
+    //     }
+    // }
 
     status = RevPiDDS_StateDataReader_return_loan(subscriber->dds_dataReader, message_sequence, info_sequence);
     checkStatus(status, "RevPiDDS_StateDataReader_return_loan");
@@ -142,22 +175,23 @@ bool state_topic_read(const subscriber_t* subscriber, state_t* state_data) {
         state_data->speed = speed;
     }
 
+    DDS_free(message_sequence);
+    DDS_free(info_sequence);
+
     return state_valid;
 
 }
 
 void state_topic_listen(listener_t* listener, on_state_data_available_t callback) {
 
-    state_listener_data_t* listener_data = malloc(sizeof(state_listener_data_t));
-    checkHandle(listener_data, "malloc");
-    listener_data->state_data_reader = &listener->subscriber.dds_dataReader;
-    listener->dds_listener->listener_data = listener_data;
+    listener->listener_data->state_data_reader = listener->subscriber.dds_dataReader;
+    listener->dds_listener->listener_data = listener->listener_data;
+    listener->listener_data = listener->listener_data;
     listener->dds_listener->on_data_available = &on_state_data_available;
 
     DDS_StatusMask mask = DDS_DATA_AVAILABLE_STATUS | DDS_REQUESTED_DEADLINE_MISSED_STATUS;
     DDS_ReturnCode_t status = DDS_DataReader_set_listener(listener->subscriber.dds_dataReader, listener->dds_listener, mask);
     checkStatus(status, "DDS_DataReader_set_listener");
-
 
     on_state_data_available_callback = callback;
 }

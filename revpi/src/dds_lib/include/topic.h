@@ -11,8 +11,9 @@
  * expected to be in the topic.
  */
 typedef enum {
-    DECISIONS = 0, ///< Topic used to store information about the actors in the system
-    TASKS = 1   ///< Topic used to publish information about tasks that should be processed by WORKERS
+    DECISIONS = 0,  ///< Topic used to store information about the actors in the system
+    STATE = 1,      ///< Topic used to publish information about the system's current state
+    TASKS = 2       ///< Topic used to publish information about tasks that should be processed by WORKERS
 } TopicType;
 
 /**
