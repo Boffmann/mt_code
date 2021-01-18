@@ -11,12 +11,14 @@ LINK_DIRECTORIES($ENV{OSPL_HOME}/lib)
 
 set(target revpi_worker)
 
+set(include_path "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(dds_lib revpi_dds)
 
 set(sources
     ${source_path}/main.c
+    ${source_path}/DIO.c
 )
 
 #
@@ -34,6 +36,7 @@ add_executable(${target} ${sources})
 
 target_include_directories(${target}
     PRIVATE
+    ${include_path}
     ${CMAKE_SOURCE_DIR}/src
 )
 
