@@ -13,7 +13,8 @@
 // struct decision_listener_data_t;
 
 typedef struct {
-    long decision_id;
+    long sender_id;
+    long decision;
 } decision_t;
 
 typedef void (*on_decision_data_available_t)(const decision_t* decision);

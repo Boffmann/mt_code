@@ -5,9 +5,10 @@ module RevPiDDS {
   #pragma keylist Tasks taskType
 
   struct Decision {
-    long decisionID;
+    long senderID;
+    long decision;
   };
-  #pragma keylist Decision decisionID
+  #pragma keylist Decision senderID
 
   struct State {
     long timestamp;

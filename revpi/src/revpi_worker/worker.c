@@ -28,12 +28,14 @@ void schedule_new_task(const task_t* task_data) {
         } else {
             printf("Could not read speed\n");
         }
+
+        decision_data.sender_id = 1;
         
         if (state_data.speed < 10.0) {
-            decision_data.decision_id = 1;
+            decision_data.decision = 1;
             decision_topic_publish(&g_decision_publisher, &decision_data);
         } else {
-            decision_data.decision_id = 2;
+            decision_data.decision = 2;
             decision_topic_publish(&g_decision_publisher, &decision_data);
         }
     }

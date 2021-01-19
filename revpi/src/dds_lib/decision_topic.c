@@ -29,11 +29,13 @@ void on_decision_data_available(void* listener_data, DDS_DataReader reader) {
         DDS_ANY_INSTANCE_STATE);
     checkStatus(status, "RevPiDDS_DecisionDataReader_read");
 
-    long decisionid = 0;
+    long senderid = 0;
+    long decision = 0;
 
     if ( message_seq->_length > 0 ) {
         if( message_infoSeq->_buffer[0].valid_data == TRUE ) {
-            decisionid = message_seq->_buffer[0].decisionID;
+            senderid = message_seq->_buffer[0].senderID;
+            decision = message_seq->_buffer[0].decision;
         }
     }
 
@@ -41,10 +43,11 @@ void on_decision_data_available(void* listener_data, DDS_DataReader reader) {
     checkStatus(status, "RevPiDDS_DecisionDataReader_return_loan");
 
 
-    if (decisionid != 0) {
+    if (senderid != 0) {
         printf("\n Calling decision callback...\n");
         decision_t decision_data;
-        decision_data.decision_id = decisionid;
+        decision_data.sender_id = senderid;
+        decision_data.decision = decision;
         on_decision_data_available_callback(&decision_data);
     }
 
@@ -87,13 +90,14 @@ void decision_topic_publish(const publisher_t* publisher, const decision_t* deci
 
     RevPiDDS_Decision *message = RevPiDDS_Decision__alloc();
     checkHandle(message, "RevPiDDS_Decision__alloc");
-    message->decisionID = decision_data->decision_id;
+    message->senderID = decision_data->sender_id;
+    message->decision = decision_data->decision;
     DDS_InstanceHandle_t message_handle = RevPiDDS_DecisionDataWriter_register_instance(publisher->dds_dataWriter, message);
 
     DDS_ReturnCode_t status = RevPiDDS_DecisionDataWriter_write(publisher->dds_dataWriter, message, message_handle);
     checkStatus(status, "RevPiDDS_DecisionDataWriter_write");
 
-    printf("Finished publishing decision %ld\n", decision_data->decision_id);
+    printf("Finished publishing decision %ld\n", decision_data->decision);
     printf("Used data writer: %p\n", (void*)&publisher->dds_dataWriter);
 
     // Dispose and unregister message
@@ -126,11 +130,13 @@ bool decision_topic_read(const subscriber_t* subscriber, decision_t* decision_da
     );
     checkStatus(status, "RevPiDDS_DecisionDataReader_take");
 
-    long decisionid = 0;
+    long senderid = 0;
+    long decision = 0;
 
     if ( message_sequence->_length > 0 ) {
         if(info_sequence->_buffer[0].valid_data == TRUE ) {
-            decisionid = message_sequence->_buffer[0].decisionID;
+            senderid = message_sequence->_buffer[0].senderID;
+            decision = message_sequence->_buffer[0].decision;
             decision_valid = true;
         }
     }
@@ -139,7 +145,8 @@ bool decision_topic_read(const subscriber_t* subscriber, decision_t* decision_da
     checkStatus(status, "RevPiDDS_DecisionDataReader_return_loan");
 
     if (decision_valid) {
-        decision_data->decision_id = decisionid;
+        decision_data->sender_id = senderid;
+        decision_data->decision = decision;
     }
 
     DDS_free(message_sequence);

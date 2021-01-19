@@ -15,9 +15,28 @@ typedef enum {
 
 } RunningMode;
 
+bool g_firstDecision = false;
+bool g_secondDecision = false;
+
 void new_decision(const decision_t* decision_data) {
     printf("A new decision1!!!\n");
-    printf("Deciosion is: %ld\n", decision_data->decision_id);
+    printf("Deciosion is: %ld from %ld\n", decision_data->decision, decision_data->sender_id);
+
+    if (decision_data->sender_id == 1 && decision_data->decision == 2) {
+        g_firstDecision = true;
+    }
+    if (decision_data->sender_id == 2 && decision_data->decision == 2) {
+        g_secondDecision = true;
+    }
+
+    if (g_secondDecision && g_firstDecision) {
+        // digital_write("O_1", 1);
+        // digital_write("O_2", 0);
+    } else {
+        // digital_write("O_1", 0);
+        // digital_write("O_2", 1);
+    }
+
 }
 
 DDS_TopicQos* create_topic_qos(const domain_participant_t* domain_participant) {
