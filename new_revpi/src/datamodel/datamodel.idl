@@ -1,0 +1,17 @@
+module RevPiDDS {
+  struct Tasks {
+    long taskType;
+  };
+  #pragma keylist Tasks taskType
+
+  struct Decision {
+    long decisionID;
+  };
+  #pragma keylist Decision decisionID
+
+  struct State {
+    long timestamp;
+    double speed;
+  };
+  #pragma keylist State timestamp
+};
