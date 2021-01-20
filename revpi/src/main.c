@@ -10,7 +10,7 @@ struct StateMessage state_message;
 void new_decision_callback(const decision_data_t* decision_data) {
 
     (void) state_DataReader;
-    printf("Callback triggered with decision data: %ld\n", decision_data->decisionID);
+    printf("Callback triggered with decision data: %ld\n", decision_data->decision);
 }
 
 void new_task_callback(const task_data_t* task_data) {

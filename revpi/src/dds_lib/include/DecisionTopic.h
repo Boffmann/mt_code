@@ -12,7 +12,8 @@ struct DecisionMessage {
 };
 
 typedef struct {
-    long decisionID;
+    long senderID;
+    long decision;
 } decision_data_t;
 
 typedef void (*on_decision_data_available_t)(const decision_data_t* data);

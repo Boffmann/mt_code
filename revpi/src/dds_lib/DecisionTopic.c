@@ -174,7 +174,8 @@ void decisionTopic_write(DDS_DataWriter dataWriter, const decision_data_t* data)
     RevPiDDS_Decision* decisionMessage;
 
     decisionMessage = RevPiDDS_Decision__alloc();
-    decisionMessage->decisionID = data->decisionID;
+    decisionMessage->senderID = data->senderID;
+    decisionMessage->decision = data->decision;
 
     g_status = RevPiDDS_DecisionDataWriter_write(dataWriter, decisionMessage, DDS_HANDLE_NIL);
     checkStatus(g_status, "RevPiDDS_DecisionDataWriter_write");
@@ -198,7 +199,8 @@ bool decisionTopic_read(DDS_DataReader dataReader, struct DecisionMessage* messa
     checkStatus(g_status, "RevPiDDS_DecisionDataReader_read");
 
     if (message->message_seq->_length > 0 && message->message_infoSeq->_buffer[0].valid_data) {
-        result_data->decisionID = message->message_seq->_buffer[0].decisionID;
+        result_data->senderID = message->message_seq->_buffer[0].senderID;
+        result_data->decision = message->message_seq->_buffer[0].decision;
         is_newData = true;
     }
     RevPiDDS_DecisionDataReader_return_loan(dataReader, message->message_seq, message->message_infoSeq);
