@@ -20,6 +20,7 @@ set(generated_path "${CMAKE_BINARY_DIR}/gen")
 set(dds_lib revpi_dds)
 
 set(sources
+  ${source_path}/DIO.c
   ${source_path}/main.c
 )
 
@@ -42,7 +43,6 @@ target_include_directories(${target}
   PRIVATE
   ${include_path}
   ${generated_path}
-  # ${CMAKE_SOURCE_DIR}/src/dds_lib/include
 )
 
 #
