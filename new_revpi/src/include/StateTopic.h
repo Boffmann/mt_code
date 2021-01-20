@@ -16,7 +16,7 @@ typedef struct {
     double speed;
 } state_data_t;
 
-typedef void (*on_state_data_available_t)(const state_data_t* state_data);
+typedef void (*on_state_data_available_t)(const state_data_t* data);
 
 extern on_state_data_available_t state_data_available_callback;
 

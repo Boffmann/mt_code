@@ -1,55 +1,44 @@
-#include "StateTopic.h"
+#include "DecisionTopic.h"
 #include "DDSEntitiesCreator.h"
 #include "CheckStatus.h"
 
-on_state_data_available_t state_data_available_callback = NULL;
+on_decision_data_available_t decision_data_available_callback = NULL;
 
-void on_state_data_available(void* listener_data, DDS_DataReader reader) {
+void on_decision_data_available(void* listener_data, DDS_DataReader reader) {
     (void) listener_data;
-    struct StateMessage message;
-    state_data_t data;
-    DDS_sequence_RevPiDDS_State msgSeq          = { 0, 0, DDS_OBJECT_NIL, FALSE};
-    DDS_SampleInfoSeq           infoSeq         = { 0, 0, DDS_OBJECT_NIL, FALSE};
+    struct DecisionMessage message;
+    decision_data_t data;
+    DDS_sequence_RevPiDDS_Decision  msgSeq          = { 0, 0, DDS_OBJECT_NIL, FALSE};
+    DDS_SampleInfoSeq               infoSeq         = { 0, 0, DDS_OBJECT_NIL, FALSE};
 
     printf("On Data Available\n");
 
     message.message_seq = &msgSeq;
     message.message_infoSeq = &infoSeq;
 
-    bool is_newData = stateTopic_read(reader, &message, &data);
+    bool is_newData = decisionTopic_read(reader, &message, &data);
 
     if (is_newData) {
-        state_data_available_callback(&data);
+        decision_data_available_callback(&data);
     }
-
-    // g_status = RevPiDDS_StateDataReader_read(
-    //     reader,
-    //     &msgSeq,
-    //     &infoSeq,
-    //     DDS_LENGTH_UNLIMITED,
-    //     DDS_ANY_SAMPLE_STATE,
-    //     DDS_ANY_VIEW_STATE,
-    //     DDS_ANY_INSTANCE_STATE
-    // );
-    // checkStatus(state, "RevPiDDS_StateDataReader_read");
 
 }
 
-void registerStateMessageType(DDS_DomainParticipant domainParticipant, DDS_TypeSupport typeSupport) {
+void registerDecisionMessageType(DDS_DomainParticipant domainParticipant, DDS_TypeSupport typeSupport) {
 
-    char* typeName = RevPiDDS_StateTypeSupport_get_type_name(typeSupport);
+    char* typeName = RevPiDDS_DecisionTypeSupport_get_type_name(typeSupport);
 
-    g_status = RevPiDDS_StateTypeSupport_register_type(typeSupport, domainParticipant, typeName);
-    checkStatus(g_status, "RevPiDDS_StateTypeSupport_register_type");
+    g_status = RevPiDDS_DecisionTypeSupport_register_type(typeSupport, domainParticipant, typeName);
+    checkStatus(g_status, "RevPiDDS_DecisionTypeSupport_register_type");
 
     DDS_free(typeName);
 
 }
 
-DDS_TopicQos* createStateTopicQos(DDS_DomainParticipant domainParticipant) {
+DDS_TopicQos* createDecisionTopicQos(DDS_DomainParticipant domainParticipant) {
 
     DDS_TopicQos* topicQos = DDS_TopicQos__alloc();
-    checkHandle(topicQos, "DDS_TopicQos__alloc");
+    checkHandle(topicQos, "DDS_DecisionQos__alloc");
     g_status = DDS_DomainParticipant_get_default_topic_qos(domainParticipant, topicQos);
     checkStatus(g_status, "DDS_DomainParticipant_get_default_topic_qos");
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
@@ -64,31 +53,31 @@ DDS_TopicQos* createStateTopicQos(DDS_DomainParticipant domainParticipant) {
 
 }
 
-DDS_Topic stateTopic_create(DDS_DomainParticipant domainParticipant, const char* topicName) {
+DDS_Topic decisionTopic_create(DDS_DomainParticipant domainParticipant, const char* topicName) {
 
     DDS_Topic topic;
-    char* stateTypeName = DDS_OBJECT_NIL;
-    DDS_TypeSupport stateTypeSupport = DDS_OBJECT_NIL;
+    char* decisionTypeName = DDS_OBJECT_NIL;
+    DDS_TypeSupport decisionTypeSupport = DDS_OBJECT_NIL;
 
     // Register the Topic's type in the DDS Domain.
-    stateTypeSupport = RevPiDDS_StateTypeSupport__alloc();
-    checkHandle(stateTypeSupport, "RevPiDDS_StateTypeSupport__alloc");
-    registerStateMessageType(domainParticipant, stateTypeSupport);
+    decisionTypeSupport = RevPiDDS_DecisionTypeSupport__alloc();
+    checkHandle(decisionTypeSupport, "RevPiDDS_DecisionTypeSupport__alloc");
+    registerDecisionMessageType(domainParticipant, decisionTypeSupport);
 
-    DDS_TopicQos* topicQos = createStateTopicQos(domainParticipant);
+    DDS_TopicQos* topicQos = createDecisionTopicQos(domainParticipant);
 
     // Create the Topic's in the DDS Domain.
-    stateTypeName = RevPiDDS_StateTypeSupport_get_type_name(stateTypeSupport);
-    topic = createTopic(domainParticipant, topicName, stateTypeName, topicQos);
+    decisionTypeName = RevPiDDS_DecisionTypeSupport_get_type_name(decisionTypeSupport);
+    topic = createTopic(domainParticipant, topicName, decisionTypeName, topicQos);
 
     DDS_free(topicQos);
-    DDS_free(stateTypeName);
-    DDS_free(stateTypeSupport);
+    DDS_free(decisionTypeName);
+    DDS_free(decisionTypeSupport);
 
     return topic;
 }
 
-DDS_PublisherQos* stateTopic_getPublisherQos(DDS_DomainParticipant domainParticipant) {
+DDS_PublisherQos* decisionTopic_getPublisherQos(DDS_DomainParticipant domainParticipant) {
 
     DDS_PublisherQos* publisherQos = DDS_PublisherQos__alloc();
 
@@ -106,7 +95,7 @@ DDS_PublisherQos* stateTopic_getPublisherQos(DDS_DomainParticipant domainPartici
     return publisherQos;
 }
 
-DDS_DataWriterQos* stateTopic_getDataWriterQos(DDS_Publisher publisher, DDS_Topic topic) {
+DDS_DataWriterQos* decisionTopic_getDataWriterQos(DDS_Publisher publisher, DDS_Topic topic) {
 
     DDS_TopicQos* topicQos;
     DDS_DataWriterQos* dataWriterQos;
@@ -128,7 +117,7 @@ DDS_DataWriterQos* stateTopic_getDataWriterQos(DDS_Publisher publisher, DDS_Topi
     return dataWriterQos;
 }
 
-DDS_SubscriberQos* stateTopic_getSubscriberQos(DDS_DomainParticipant domainParticipant) {
+DDS_SubscriberQos* decisionTopic_getSubscriberQos(DDS_DomainParticipant domainParticipant) {
 
     DDS_SubscriberQos* subscriberQos = DDS_SubscriberQos__alloc();
     checkHandle(subscriberQos, "DDS_SubscriberQos__alloc");
@@ -146,7 +135,7 @@ DDS_SubscriberQos* stateTopic_getSubscriberQos(DDS_DomainParticipant domainParti
     return subscriberQos;
 }
 
-DDS_DataReaderQos* stateTopic_getDataReaderQos(DDS_Subscriber subscriber, DDS_Topic topic) {
+DDS_DataReaderQos* decisionTopic_getDataReaderQos(DDS_Subscriber subscriber, DDS_Topic topic) {
 
     DDS_DataReaderQos* dataReaderQos;
     DDS_TopicQos* topicQos;
@@ -167,36 +156,35 @@ DDS_DataReaderQos* stateTopic_getDataReaderQos(DDS_Subscriber subscriber, DDS_To
     return dataReaderQos;
 }
 
-void stateTopic_newMessage(struct StateMessage* message) {
-    message->message_seq = DDS_sequence_RevPiDDS_State__alloc();
-    checkHandle(message->message_seq, "DDS_sequence_RevPiDDS_State__alloc");
+void decisionTopic_newMessage(struct DecisionMessage* message) {
+    message->message_seq = DDS_sequence_RevPiDDS_Decision__alloc();
+    checkHandle(message->message_seq, "DDS_sequence_RevPiDDS_Decision__alloc");
     message->message_infoSeq = DDS_SampleInfoSeq__alloc();
     checkHandle(message->message_infoSeq, "DDS_SampleInfoSeq__alloc");
 }
 
-void stateTopic_freeMessage(struct StateMessage* message) {
+void decisionTopic_freeMessage(struct DecisionMessage* message) {
     DDS_free(message->message_seq);
     DDS_free(message->message_infoSeq);
 }
 
-void stateTopic_write(DDS_DataWriter dataWriter, const state_data_t* data) {
-    RevPiDDS_State* stateMessage;
+void decisionTopic_write(DDS_DataWriter dataWriter, const decision_data_t* data) {
+    RevPiDDS_Decision* decisionMessage;
 
-    stateMessage = RevPiDDS_State__alloc();
-    stateMessage->timestamp = data->timestamp;
-    stateMessage->speed = data->speed;
+    decisionMessage = RevPiDDS_Decision__alloc();
+    decisionMessage->decisionID = data->decisionID;
 
-    g_status = RevPiDDS_StateDataWriter_write(dataWriter, stateMessage, DDS_HANDLE_NIL);
-    checkStatus(g_status, "RevPiDDS_StateDataWriter_write");
+    g_status = RevPiDDS_DecisionDataWriter_write(dataWriter, decisionMessage, DDS_HANDLE_NIL);
+    checkStatus(g_status, "RevPiDDS_DecisionDataWriter_write");
 
-    DDS_free(stateMessage);
+    DDS_free(decisionMessage);
 }
 
-bool stateTopic_read(DDS_DataReader dataReader, struct StateMessage* message, state_data_t* result_data) {
+bool decisionTopic_read(DDS_DataReader dataReader, struct DecisionMessage* message, decision_data_t* result_data) {
 
     bool is_newData = false;
 
-    g_status = RevPiDDS_StateDataReader_read(
+    g_status = RevPiDDS_DecisionDataReader_read(
         dataReader,
         message->message_seq,
         message->message_infoSeq,
@@ -205,19 +193,18 @@ bool stateTopic_read(DDS_DataReader dataReader, struct StateMessage* message, st
         DDS_ANY_VIEW_STATE,
         DDS_ANY_INSTANCE_STATE
     );
-    checkStatus(g_status, "RevPiDDS_StateDataReader_read");
+    checkStatus(g_status, "RevPiDDS_DecisionDataReader_read");
 
     if (message->message_seq->_length > 0 && message->message_infoSeq->_buffer[0].valid_data) {
-        result_data->timestamp = message->message_seq->_buffer[0].timestamp;
-        result_data->speed = message->message_seq->_buffer[0].speed;
+        result_data->decisionID = message->message_seq->_buffer[0].decisionID;
         is_newData = true;
     }
-    RevPiDDS_StateDataReader_return_loan(dataReader, message->message_seq, message->message_infoSeq);
+    RevPiDDS_DecisionDataReader_return_loan(dataReader, message->message_seq, message->message_infoSeq);
 
     return is_newData;
 }
 
-void stateTopic_registerListener(struct DDS_DataReaderListener* listener, DDS_DataReader dataReader, on_state_data_available_t callback) {
+void decisionTopic_registerListener(struct DDS_DataReaderListener* listener, DDS_DataReader dataReader, on_decision_data_available_t callback) {
 
     DDS_StatusMask mask;
     // Listener_data = malloc(sizeof(struct Listener_data));
@@ -226,12 +213,12 @@ void stateTopic_registerListener(struct DDS_DataReaderListener* listener, DDS_Da
     // Listener_data->message_DataReader = &message_DataReader;
     // Listener_data->isClosed = &isClosed;
     // message_Listener->listener_data = Listener_data;
-    listener->on_data_available = on_state_data_available;
+    listener->on_data_available = on_decision_data_available;
     // message_Listener->on_requested_deadline_missed = on_requested_deadline_missed;
 
     mask = DDS_DATA_AVAILABLE_STATUS | DDS_REQUESTED_DEADLINE_MISSED_STATUS;
     g_status = DDS_DataReader_set_listener(dataReader, listener, mask);
     checkStatus(g_status, "DDS_DataReader_set_listener");
 
-    state_data_available_callback = callback;
+    decision_data_available_callback = callback;
 }
