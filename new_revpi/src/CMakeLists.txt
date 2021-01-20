@@ -4,37 +4,30 @@
 # External dependencies
 #
 
-include_directories($ENV{OSPL_HOME}/include)
-include_directories($ENV{OSPL_HOME}/include/sys)
 include_directories($ENV{OSPL_HOME}/include/dcps/C/SAC)
-include_directories($ENV{OSPL_HOME}/include/dcps/C/C99)
 
 LINK_DIRECTORIES($ENV{OSPL_HOME}/lib)
 
-set(OSPL_LINK_LIBS PUBLIC ddskernel dcpsc99)
+set(target worker)
 
-set(target revpi_dds)
-
-set(include_path "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(include_path 
+  "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/dds_lib/include"
+)
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 set(generated_path "${CMAKE_BINARY_DIR}/gen")
 
-set(datamodel_lib datamodel)
+set(dds_lib revpi_dds)
 
 set(sources
-  ${source_path}/CheckStatus.c
-  ${source_path}/DecisionTopic.c
-  ${source_path}/DDSEntitiesCreator.c
   ${source_path}/main.c
-  ${source_path}/StateTopic.c
-  ${source_path}/TaskTopic.c
 )
 
 #
-# Create library
+# Create executable
 #
 
-# Build library
+# Build executable
 add_executable(${target}
   ${sources}
 )
@@ -49,7 +42,7 @@ target_include_directories(${target}
   PRIVATE
   ${include_path}
   ${generated_path}
-  ${CMAKE_SOURCE_DIR}/src
+  # ${CMAKE_SOURCE_DIR}/src/dds_lib/include
 )
 
 #
@@ -58,8 +51,8 @@ target_include_directories(${target}
 
 target_link_libraries(${target}
   PRIVATE
-  ${OSPL_LINK_LIBS}
-  ${datamodel_lib}
+  ${dds_lib}
 )
 
 add_subdirectory(datamodel)
+add_subdirectory(dds_lib)
