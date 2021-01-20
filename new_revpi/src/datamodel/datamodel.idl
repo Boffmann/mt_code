@@ -1,8 +1,8 @@
 module RevPiDDS {
-  struct Tasks {
+  struct Task {
     long taskType;
   };
-  #pragma keylist Tasks taskType
+  #pragma keylist Task taskType
 
   struct Decision {
     long decisionID;

@@ -27,6 +27,7 @@ set(sources
   ${source_path}/DDSEntitiesCreator.c
   ${source_path}/main.c
   ${source_path}/StateTopic.c
+  ${source_path}/TaskTopic.c
 )
 
 #
