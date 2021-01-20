@@ -23,14 +23,10 @@ set(datamodel_lib datamodel)
 
 set(sources
   ${source_path}/CheckStatus.c
-  ${source_path}/decision_topic.c
-  ${source_path}/domain_participant.c
-  ${source_path}/listener.c
-  ${source_path}/publisher.c
-  ${source_path}/state_topic.c
-  ${source_path}/subscriber.c
-  ${source_path}/task_topic.c
-  ${source_path}/topic.c
+  ${source_path}/DecisionTopic.c
+  ${source_path}/DDSEntitiesCreator.c
+  ${source_path}/StateTopic.c
+  ${source_path}/TaskTopic.c
 )
 
 #
