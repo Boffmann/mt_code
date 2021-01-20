@@ -92,14 +92,8 @@ void deletePublisher(DDS_DomainParticipant domainParticipant, DDS_Publisher publ
 }
 
 DDS_DataWriter createDataWriter(DDS_Publisher publisher, DDS_Topic topic, DDS_DataWriterQos* dataWriterQos) {
-    DDS_DataWriter dataWriter;
-    DDS_TopicQos* topicQos = DDS_TopicQos__alloc();    
 
-    g_status = DDS_Topic_get_qos(topic, topicQos);
-    checkStatus(g_status, "DDS_Topic_get_qos");
-    g_status = DDS_Publisher_copy_from_topic_qos(publisher, dataWriterQos, topicQos);
-    checkStatus(g_status, "DDS_Publisher_copy_from_topic_qos");
-    dataWriterQos->writer_data_lifecycle.autodispose_unregistered_instances = FALSE;
+    DDS_DataWriter dataWriter;
 
     dataWriter = DDS_Publisher_create_datawriter(
         publisher,
@@ -110,13 +104,61 @@ DDS_DataWriter createDataWriter(DDS_Publisher publisher, DDS_Topic topic, DDS_Da
     );
     checkHandle(dataWriter, "DDS_Publisher_create_datawriter");
 
-    DDS_free(dataWriterQos);
-    DDS_free(topicQos);
-
     return dataWriter;
 }
 
 void deleteDataWriter(DDS_Publisher publisher, DDS_DataWriter dataWriter) {
     g_status = DDS_Publisher_delete_datawriter(publisher, dataWriter);
     checkStatus(g_status, "DDS_Publisher_delete_datawriter");
+}
+
+DDS_Subscriber createSubscriber(DDS_DomainParticipant domainParticipant, const DDS_SubscriberQos* subscriberQos) {
+
+    DDS_Subscriber subscriber;
+
+    subscriber = DDS_DomainParticipant_create_subscriber(
+        domainParticipant,
+        subscriberQos,
+        NULL,
+        DDS_STATUS_MASK_NONE
+    );
+    checkHandle(subscriber, "DDS_DomainParticipant_create_subscriber");
+
+    return subscriber;
+}
+
+void deleteSubscriber(DDS_DomainParticipant domainParticipant, DDS_Subscriber subscriber) {
+    g_status = DDS_DomainParticipant_delete_subscriber(domainParticipant, subscriber);
+    checkStatus(g_status, "DDS_DomainParticipant_delete_subscriber");
+}
+
+DDS_DataReader createDataReader(DDS_Subscriber subscriber, DDS_Topic topic, DDS_DataReaderQos* dataReaderQos) {
+
+    DDS_DataReader dataReader;
+    DDS_TopicQos* topicQos;
+
+    topicQos = DDS_TopicQos__alloc();
+    checkHandle(topicQos, "DDS_TopicQos__alloc");
+    g_status = DDS_Topic_get_qos(topic, topicQos);
+    checkStatus(g_status, "DDS_Topic_get_qos");
+    g_status = DDS_Subscriber_copy_from_topic_qos(subscriber, dataReaderQos, topicQos);
+    checkStatus(g_status, "DDS_Subscriber_copy_from_topic_qos");
+
+    dataReader = DDS_Subscriber_create_datareader(
+        subscriber,
+        topic,
+        dataReaderQos,
+        NULL,
+        DDS_STATUS_MASK_NONE
+    );
+    checkHandle(dataReader, "DDS_Subscriber_create_datareader");
+
+    DDS_free(topicQos);
+
+    return dataReader;
+}
+
+void deleteDataReader(DDS_Subscriber subscriber, DDS_DataReader dataReader) {
+    g_status = DDS_Subscriber_delete_datareader(subscriber, dataReader);
+    checkStatus(g_status, "DDS_Subscriber_delete_datareader");
 }
