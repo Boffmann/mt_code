@@ -32,5 +32,8 @@ void deleteSubscriber(DDS_DomainParticipant domainParticipant, DDS_Subscriber su
 DDS_DataReader createDataReader(DDS_Subscriber subscriber, DDS_Topic topic, DDS_DataReaderQos* dataReaderQos);
 void deleteDataReader(DDS_Subscriber subscriber, DDS_DataReader dataReader);
 
+struct DDS_DataReaderListener* createDataReaderListener();
+void deleteDataReaderListener(struct DDS_DataReaderListener* listener);
+
 
 #endif

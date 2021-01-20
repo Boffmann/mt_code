@@ -3,9 +3,15 @@
 #include "CheckStatus.h"
 
 
+void test_callback(const state_data_t* state_data) {
+    printf("Callback triggered with data: %ld speed: %f\n", state_data->timestamp, state_data->speed);
+}
+
+
 typedef enum {
     PUBLISHER,
-    SUBSCRIBER
+    SUBSCRIBER,
+    LISTENER
 } RunningMode;
 
 int main(int argc, char *argv[]) {
@@ -16,16 +22,17 @@ int main(int argc, char *argv[]) {
     int opt;
 
     if (argc < 2) {
-        printf("Usage: %s [-sp]\n", argv[0]);
+        printf("Usage: %s [-slp]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
-    while ((opt = getopt(argc, argv, "sp")) != -1) {
+    while ((opt = getopt(argc, argv, "slp")) != -1) {
         switch (opt) {
             case 's': mode = SUBSCRIBER; break;
             case 'p': mode = PUBLISHER; break;
+            case 'l': mode = LISTENER; break;
             default:
-                printf("Usage: %s [-sp]\n", argv[0]);
+                printf("Usage: %s [-slp]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
@@ -87,6 +94,33 @@ int main(int argc, char *argv[]) {
         }
 
         stateTopic_freeMessage(&state_message);
+        deleteDataReader(state_Subscriber, state_DataReader);
+        deleteSubscriber(domainParticipant, state_Subscriber);
+
+    } else if (mode == LISTENER) {
+
+        DDS_SubscriberQos* subscriberQos;
+        DDS_DataReaderQos* dataReaderQos;
+        DDS_Subscriber state_Subscriber;
+        DDS_DataReader state_DataReader;
+        struct DDS_DataReaderListener* state_listener;
+
+        subscriberQos = stateTopic_getSubscriberQos(domainParticipant);
+        state_Subscriber = createSubscriber(domainParticipant, subscriberQos);
+        DDS_free(subscriberQos);
+
+        dataReaderQos = stateTopic_getDataReaderQos(state_Subscriber, stateTopic);
+        state_DataReader = createDataReader(state_Subscriber, stateTopic, dataReaderQos);
+        DDS_free(dataReaderQos);
+
+        state_listener = createDataReaderListener();
+        stateTopic_registerListener(state_listener, state_DataReader, &test_callback);
+
+        for (int i = 0; i < 10; ++i) {
+            sleep(2);
+        }
+
+        deleteDataReaderListener(state_listener);
         deleteDataReader(state_Subscriber, state_DataReader);
         deleteSubscriber(domainParticipant, state_Subscriber);
 

@@ -162,3 +162,17 @@ void deleteDataReader(DDS_Subscriber subscriber, DDS_DataReader dataReader) {
     g_status = DDS_Subscriber_delete_datareader(subscriber, dataReader);
     checkStatus(g_status, "DDS_Subscriber_delete_datareader");
 }
+
+struct DDS_DataReaderListener* createDataReaderListener() {
+    struct DDS_DataReaderListener* listener;
+
+    listener = DDS_DataReaderListener__alloc();
+    checkHandle(listener, "DDS_DataReaderListener__alloc");
+
+
+    return listener;
+}
+
+void deleteDataReaderListener(struct DDS_DataReaderListener* listener) {
+    DDS_free(listener);
+}

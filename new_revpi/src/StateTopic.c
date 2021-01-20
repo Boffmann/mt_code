@@ -2,8 +2,38 @@
 #include "DDSEntitiesCreator.h"
 #include "CheckStatus.h"
 
-// char* g_StateTypeName = DDS_OBJECT_NIL;
-// DDS_TypeSupport g_StateTypeSupport = DDS_OBJECT_NIL;
+on_state_data_available_t state_data_available_callback = NULL;
+
+void on_state_data_available(void* listener_data, DDS_DataReader reader) {
+    (void) listener_data;
+    struct StateMessage message;
+    state_data_t data;
+    DDS_sequence_RevPiDDS_State msgSeq          = { 0, 0, DDS_OBJECT_NIL, FALSE};
+    DDS_SampleInfoSeq           infoSeq         = { 0, 0, DDS_OBJECT_NIL, FALSE};
+
+    printf("On Data Available\n");
+
+    message.message_seq = &msgSeq;
+    message.message_infoSeq = &infoSeq;
+
+    bool is_newData = stateTopic_read(reader, &message, &data);
+
+    if (is_newData) {
+        state_data_available_callback(&data);
+    }
+
+    // g_status = RevPiDDS_StateDataReader_read(
+    //     reader,
+    //     &msgSeq,
+    //     &infoSeq,
+    //     DDS_LENGTH_UNLIMITED,
+    //     DDS_ANY_SAMPLE_STATE,
+    //     DDS_ANY_VIEW_STATE,
+    //     DDS_ANY_INSTANCE_STATE
+    // );
+    // checkStatus(state, "RevPiDDS_StateDataReader_read");
+
+}
 
 void registerMessageType(DDS_DomainParticipant domainParticipant, DDS_TypeSupport typeSupport) {
 
@@ -180,9 +210,28 @@ bool stateTopic_read(DDS_DataReader dataReader, struct StateMessage* message, st
     if (message->message_seq->_length > 0 && message->message_infoSeq->_buffer[0].valid_data) {
         result_data->timestamp = message->message_seq->_buffer[0].timestamp;
         result_data->speed = message->message_seq->_buffer[0].speed;
-        RevPiDDS_StateDataReader_return_loan(dataReader, message->message_seq, message->message_infoSeq);
         is_newData = true;
     }
+    RevPiDDS_StateDataReader_return_loan(dataReader, message->message_seq, message->message_infoSeq);
 
     return is_newData;
+}
+
+void stateTopic_registerListener(struct DDS_DataReaderListener* listener, DDS_DataReader dataReader, on_state_data_available_t callback) {
+
+    DDS_StatusMask mask;
+    // Listener_data = malloc(sizeof(struct Listener_data));
+    // checkHandle(Listener_data, "malloc");
+    // Listener_data->guardCondition = &guardCondition;
+    // Listener_data->message_DataReader = &message_DataReader;
+    // Listener_data->isClosed = &isClosed;
+    // message_Listener->listener_data = Listener_data;
+    listener->on_data_available = on_state_data_available;
+    // message_Listener->on_requested_deadline_missed = on_requested_deadline_missed;
+
+    mask = DDS_DATA_AVAILABLE_STATUS | DDS_REQUESTED_DEADLINE_MISSED_STATUS;
+    g_status = DDS_DataReader_set_listener(dataReader, listener, mask);
+    checkStatus(g_status, "DDS_DataReader_set_listener");
+
+    state_data_available_callback = callback;
 }
