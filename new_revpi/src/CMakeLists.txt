@@ -23,7 +23,7 @@ set(datamodel_lib datamodel)
 
 set(sources
   ${source_path}/CheckStatus.c
-  ${source_path}/DDSEntitiesManager.c
+  ${source_path}/DDSEntitiesCreator.c
   ${source_path}/main.c
   ${source_path}/StateTopic.c
 )

@@ -1,44 +1,49 @@
-#include "DDSEntitiesManager.h"
+#include "DDSEntitiesCreator.h"
 #include "CheckStatus.h"
 
 DDS_DomainId_t g_domainID = DDS_DOMAIN_ID_DEFAULT;
 DDS_DomainParticipantFactory g_domainParticipantFactory = DDS_OBJECT_NIL;
-DDS_DomainParticipant g_domainParticipant = DDS_OBJECT_NIL;
 
+// TODO Check if needs to cleanup
 const char* g_partitionName = DDS_OBJECT_NIL;
 
 DDS_ReturnCode_t g_status;
 
-void createParticipant(const char* partitionName) {
+DDS_DomainParticipant createParticipant(const char* partitionName) {
+
+    DDS_DomainParticipant domainParticipant = DDS_OBJECT_NIL;
+
     g_domainParticipantFactory = DDS_DomainParticipantFactory_get_instance();
     checkHandle(g_domainParticipantFactory, "DDS_DomainParticipantFactory_get_instance");
 
-    g_domainParticipant = DDS_DomainParticipantFactory_create_participant(
+    domainParticipant = DDS_DomainParticipantFactory_create_participant(
             g_domainParticipantFactory,
             g_domainID,
             DDS_PARTICIPANT_QOS_DEFAULT,
             NULL,
             DDS_STATUS_MASK_NONE
         );
-    checkHandle(g_domainParticipant, "DDS_DomainParticipantFactory_create_participant");
+    checkHandle(domainParticipant, "DDS_DomainParticipantFactory_create_participant");
 
     g_partitionName = partitionName;
 
+    return domainParticipant;
+
 }
 
-void deleteParticipant() {
-    g_status = DDS_DomainParticipantFactory_delete_participant(g_domainParticipantFactory, g_domainParticipant);
+void deleteParticipant(DDS_DomainParticipant domainParticipant) {
+    g_status = DDS_DomainParticipantFactory_delete_participant(g_domainParticipantFactory, domainParticipant);
     checkStatus(g_status, "DDS_DomainParticipantFactory_delete_participant");
 }
 
-DDS_Topic createTopic(const char* topicName, const char* typeName, const DDS_TopicQos* topicQos) {
+DDS_Topic createTopic(DDS_DomainParticipant domainParticipant, const char* topicName, const char* typeName, const DDS_TopicQos* topicQos) {
     DDS_Topic topic;
     const char* messageFirstPart;
     char* message;
     size_t messageFirstPartLength, topicNameLength;
 
     topic = DDS_DomainParticipant_create_topic(
-        g_domainParticipant,
+        domainParticipant,
         topicName,
         typeName,
         topicQos,
@@ -62,28 +67,27 @@ DDS_Topic createTopic(const char* topicName, const char* typeName, const DDS_Top
     return topic;
 }
 
-void deleteTopic(DDS_Topic topic) {
-    g_status = DDS_DomainParticipant_delete_topic(g_domainParticipant, topic);
+void deleteTopic(DDS_DomainParticipant domainParticipant, DDS_Topic topic) {
+    g_status = DDS_DomainParticipant_delete_topic(domainParticipant, topic);
     checkStatus(g_status, "DDS_DomainParticipant_delete_topic");
 }
 
-DDS_Publisher createPublisher(const DDS_PublisherQos* publisherQos) {
+DDS_Publisher createPublisher(DDS_DomainParticipant domainParticipant, const DDS_PublisherQos* publisherQos) {
     DDS_Publisher publisher;
     
     publisher = DDS_DomainParticipant_create_publisher(
-        g_domainParticipant,
+        domainParticipant,
         publisherQos,
         NULL,
         DDS_STATUS_MASK_NONE
     );
     checkHandle(publisher, "DDS_DomainParticipant_create_publisher");
 
-    // DDS_free(publisherQos);
     return publisher;
 }
 
-void deletePublisher(DDS_Publisher publisher) {
-    g_status = DDS_DomainParticipant_delete_publisher(g_domainParticipant, publisher);
+void deletePublisher(DDS_DomainParticipant domainParticipant, DDS_Publisher publisher) {
+    g_status = DDS_DomainParticipant_delete_publisher(domainParticipant, publisher);
     checkStatus(g_status, "DDS_DomainParticipant_delete_publisher");
 }
 
