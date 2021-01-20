@@ -15,6 +15,14 @@ typedef struct {
     long taskType;
 } task_data_t;
 
+typedef enum {
+
+    NONE = 0,
+    SHUTDOWN = 1,
+    SPEED_MONITORING = 2
+
+} TaskType;
+
 typedef void (*on_task_data_available_t)(const task_data_t* data);
 
 extern on_task_data_available_t task_data_available_callback;

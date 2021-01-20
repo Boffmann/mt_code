@@ -1,6 +1,7 @@
 #include "StateTopic.h"
 #include "DDSEntitiesCreator.h"
 #include "CheckStatus.h"
+#include "ListenerData.h"
 
 on_state_data_available_t state_data_available_callback = NULL;
 
@@ -21,17 +22,6 @@ void on_state_data_available(void* listener_data, DDS_DataReader reader) {
     if (is_newData) {
         state_data_available_callback(&data);
     }
-
-    // g_status = RevPiDDS_StateDataReader_read(
-    //     reader,
-    //     &msgSeq,
-    //     &infoSeq,
-    //     DDS_LENGTH_UNLIMITED,
-    //     DDS_ANY_SAMPLE_STATE,
-    //     DDS_ANY_VIEW_STATE,
-    //     DDS_ANY_INSTANCE_STATE
-    // );
-    // checkStatus(state, "RevPiDDS_StateDataReader_read");
 
 }
 
@@ -220,14 +210,9 @@ bool stateTopic_read(DDS_DataReader dataReader, struct StateMessage* message, st
 void stateTopic_registerListener(struct DDS_DataReaderListener* listener, DDS_DataReader dataReader, on_state_data_available_t callback) {
 
     DDS_StatusMask mask;
-    // Listener_data = malloc(sizeof(struct Listener_data));
-    // checkHandle(Listener_data, "malloc");
-    // Listener_data->guardCondition = &guardCondition;
-    // Listener_data->message_DataReader = &message_DataReader;
-    // Listener_data->isClosed = &isClosed;
-    // message_Listener->listener_data = Listener_data;
+
+    listener->listener_data = NULL;
     listener->on_data_available = on_state_data_available;
-    // message_Listener->on_requested_deadline_missed = on_requested_deadline_missed;
 
     mask = DDS_DATA_AVAILABLE_STATUS | DDS_REQUESTED_DEADLINE_MISSED_STATUS;
     g_status = DDS_DataReader_set_listener(dataReader, listener, mask);

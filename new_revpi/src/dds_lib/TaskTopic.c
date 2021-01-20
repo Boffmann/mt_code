@@ -1,6 +1,7 @@
 #include "TaskTopic.h"
 #include "DDSEntitiesCreator.h"
 #include "CheckStatus.h"
+#include "ListenerData.h"
 
 on_task_data_available_t task_data_available_callback = NULL;
 
@@ -206,14 +207,9 @@ bool taskTopic_read(DDS_DataReader dataReader, struct TaskMessage* message, task
 void taskTopic_registerListener(struct DDS_DataReaderListener* listener, DDS_DataReader dataReader, on_task_data_available_t callback) {
 
     DDS_StatusMask mask;
-    // Listener_data = malloc(sizeof(struct Listener_data));
-    // checkHandle(Listener_data, "malloc");
-    // Listener_data->guardCondition = &guardCondition;
-    // Listener_data->message_DataReader = &message_DataReader;
-    // Listener_data->isClosed = &isClosed;
-    // message_Listener->listener_data = Listener_data;
+
+    listener->listener_data = NULL;
     listener->on_data_available = on_task_data_available;
-    // message_Listener->on_requested_deadline_missed = on_requested_deadline_missed;
 
     mask = DDS_DATA_AVAILABLE_STATUS | DDS_REQUESTED_DEADLINE_MISSED_STATUS;
     g_status = DDS_DataReader_set_listener(dataReader, listener, mask);

@@ -174,5 +174,8 @@ struct DDS_DataReaderListener* createDataReaderListener() {
 }
 
 void deleteDataReaderListener(struct DDS_DataReaderListener* listener) {
+    if (listener->listener_data != NULL) {
+        free(listener->listener_data);
+    }
     DDS_free(listener);
 }
