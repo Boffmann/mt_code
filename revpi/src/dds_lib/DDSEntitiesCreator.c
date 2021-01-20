@@ -61,9 +61,6 @@ DDS_Topic createTopic(DDS_DomainParticipant domainParticipant, const char* topic
 
     free(message);
 
-
-    //DDS_free(TopicQos);
-    
     return topic;
 }
 

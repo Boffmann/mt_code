@@ -157,13 +157,7 @@ int main(int argc, char *argv[]) {
         task_listener = createDataReaderListener();
         taskTopic_registerListener(task_listener, task_DataReader, &new_task_callback);
 
-
-        // state_data_t state_data;
         for (int i = 0; i < 10; ++i) {
-            // bool is_newData = stateTopic_read(state_DataReader, &state_message, &state_data);
-            // if (is_newData){
-            //     printf("Got some new data. Stamp: %ld Speed: %f\n", state_data.timestamp, state_data.speed);
-            // }
             sleep(5);
         }
 
