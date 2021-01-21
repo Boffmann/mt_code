@@ -1,0 +1,20 @@
+---
+- name: compile and start workers
+  hosts: revpi
+  remote_user: pi
+
+  tasks:
+  - name: Copy Files
+    copy:
+      src: ./{{item}}
+      dest: ~/revpi
+    with_items:
+      ['src', 'CMakeLists.txt']
+  - name: Create build Directory
+    file:
+      path: ~/revpi/build
+      state: directory
+  - name: Build Project
+    shell:
+      executable: /bin/bash
+      cmd: source /home/pi/ospl/opensplice-OSPL_V6_9_190925OSS_RELEASE/install/HDE/armv7l.linux-dev/release.com && cd ~/revpi/build && cmake .. && make
