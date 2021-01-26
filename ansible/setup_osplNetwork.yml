@@ -1,0 +1,17 @@
+---
+- name: Setup OpenSplice Network Interface
+  hosts: revpi
+  remote_user: pi
+
+  tasks:
+    - name: Get Device's IP Address
+      shell: ip addr show eth0 | awk '$1 == "inet" {gsub(/\/.*$/, "", $2); print $2}'
+      register: ip_addr
+
+    - name: Set IP Address as OpenSplice Interface
+      lineinfile:
+        path: ~/ospl.xml
+        regexp: "<NetworkInterfaceAddress>.*</NetworkInterfaceAddress>"
+        state: present
+        line: "            <NetworkInterfaceAddress>{{ item }}</NetworkInterfaceAddress>"
+      with_items: "{{ ip_addr.stdout_lines }}"

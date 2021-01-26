@@ -1,0 +1,23 @@
+---
+
+- name: Setup and install OSPL
+  hosts: revpi
+  remote_user: pi
+  vars:
+    ospl_sources: https://github.com/ADLINK-IST/opensplice/archive/OSPL_V6_9_190925OSS_RELEASE.zip
+
+  tasks:
+  - name: Install OSPL Dependencies
+    apt: package={{ item }} state=present
+    with_items:
+    - flex
+    - bison
+    - perl
+    - gawk
+    - cmake
+    - vim
+    become: yes
+  - name: Create OpenSplice Directory
+    file: state=directory path=/home/pi/opensplice
+  - name: Download OpenSplice Source Code From GitHub
+    get_url: url={{ ospl_sources }} dest = /home/pi/opensplice
