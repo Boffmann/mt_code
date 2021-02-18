@@ -1,0 +1,25 @@
+module RevPiDDS {
+  struct Input {
+    long test;
+  };
+  #pragma keylist Input test
+  
+  struct AppendEntries {
+    long term;
+  };
+  #pragma keylist AppendEntries term
+
+  struct RequestVote {
+    long term;
+    long candidateID;
+  };
+  #pragma keylist RequestVote
+
+  struct RequestVoteReply {
+    long term;
+    long candidateID;
+    long voteGranted;
+  };
+  #pragma keylist RequestVoteReply
+
+};

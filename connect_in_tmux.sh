@@ -75,6 +75,7 @@ pane_index=0
 for IP in "${HOSTS_UP[@]}"
 do
   tmux send -t $PROJECT.$pane_index "ssh pi@$IP" ENTER
+  tmux send -t $PROJECT.$pane_index "cd ~/revpi/build" ENTER
   tmux send -t $PROJECT.$pane_index "clear" ENTER
   pane_index=$((pane_index+1))
 done

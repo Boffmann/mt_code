@@ -9,13 +9,20 @@ include_directories($ENV{OSPL_HOME}/include/sys)
 include_directories($ENV{OSPL_HOME}/include/dcps/C/SAC)
 include_directories($ENV{OSPL_HOME}/include/dcps/C/C99)
 
+include_directories($ENV{EVENTLIB}/include)
+include_directories($ENV{EVENTLIB}/build/include)
+
 LINK_DIRECTORIES($ENV{OSPL_HOME}/lib)
+LINK_DIRECTORIES($ENV{EVENTLIB}/build/lib)
 
-set(OSPL_LINK_LIBS PUBLIC ddskernel dcpsc99)
+set(OSPL_LINK_LIBS PUBLIC ddskernel dcpssac)
+set(EVENT_LIBS PUBLIC event)
 
-set(target revpi_dds)
+set(target replica)
 
-set(include_path "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(include_path 
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 set(generated_path "${CMAKE_BINARY_DIR}/gen")
 
@@ -23,18 +30,17 @@ set(datamodel_lib datamodel)
 
 set(sources
   ${source_path}/CheckStatus.c
-  ${source_path}/DecisionTopic.c
   ${source_path}/DDSEntitiesCreator.c
-  ${source_path}/StateTopic.c
-  ${source_path}/TaskTopic.c
+  ${source_path}/DDSEntitiesManager.c
+  ${source_path}/main.c
 )
 
 #
-# Create library
+# Create executable
 #
 
-# Build library
-add_library(${target} SHARED
+# Build executable
+add_executable(${target}
   ${sources}
 )
 
@@ -57,5 +63,6 @@ target_include_directories(${target}
 target_link_libraries(${target}
   PRIVATE
   ${OSPL_LINK_LIBS}
+  ${EVENT_LIBS}
   ${datamodel_lib}
 )

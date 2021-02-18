@@ -9,7 +9,7 @@
       src: ./{{item}}
       dest: ~/revpi
     with_items:
-      ['src', 'CMakeLists.txt']
+      ['../replica/src', '../replica/datamodel', '../replica/CMakeLists.txt']
   - name: Create build Directory
     file:
       path: ~/revpi/build
@@ -18,7 +18,3 @@
     shell:
       executable: /bin/bash
       cmd: source /home/pi/ospl/opensplice-OSPL_V6_9_190925OSS_RELEASE/install/HDE/armv7l.linux-dev/release.com && cd ~/revpi/build && cmake .. && make
-  - name: Run Worker in Tmux Session
-    shell:
-      executable: /bin/bash
-      cmd: source /home/pi/ospl/opensplice-OSPL_V6_9_190925OSS_RELEASE/install/HDE/armv7l.linux-dev/release.com && ~/revpi/build/worker -w

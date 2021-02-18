@@ -4,23 +4,28 @@
 # External dependencies
 #
 
+include_directories($ENV{OSPL_HOME}/include)
+include_directories($ENV{OSPL_HOME}/include/sys)
 include_directories($ENV{OSPL_HOME}/include/dcps/C/SAC)
+include_directories($ENV{OSPL_HOME}/include/dcps/C/C99)
 
 LINK_DIRECTORIES($ENV{OSPL_HOME}/lib)
 
-set(target worker)
+set(OSPL_LINK_LIBS PUBLIC ddskernel dcpssac)
+
+set(target IO)
 
 set(include_path 
-  "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/dds_lib/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 set(generated_path "${CMAKE_BINARY_DIR}/gen")
 
-set(dds_lib revpi_dds)
+set(datamodel_lib datamodel)
 
 set(sources
-  ${source_path}/DIO.c
+  ${source_path}/CheckStatus.c
+  ${source_path}/DDSEntitiesCreator.c
   ${source_path}/main.c
 )
 
@@ -51,8 +56,6 @@ target_include_directories(${target}
 
 target_link_libraries(${target}
   PRIVATE
-  ${dds_lib}
+  ${OSPL_LINK_LIBS}
+  ${datamodel_lib}
 )
-
-add_subdirectory(datamodel)
-add_subdirectory(dds_lib)
