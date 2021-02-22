@@ -6,20 +6,29 @@ module RevPiDDS {
   
   struct AppendEntries {
     long term;
+    long senderID;
   };
   #pragma keylist AppendEntries term
 
   struct RequestVote {
+    long senderID;
     long term;
     long candidateID;
   };
   #pragma keylist RequestVote
 
   struct RequestVoteReply {
+    long senderID;
     long term;
     long candidateID;
     long voteGranted;
   };
   #pragma keylist RequestVoteReply
+
+  struct ReplicaResult {
+    long senderID;
+    long temp;
+  };
+  #pragma keylist ReplicaResult
 
 };

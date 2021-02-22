@@ -12,6 +12,9 @@
 #define VOTED_NONE 255
 
 
+void elect_new_leader();
+void become_follower(const uint32_t);
+
 enum {
     WON_ELECTION        = (1 << 0),
     LEADER_ACTIVE       = (1 << 1),
@@ -22,11 +25,12 @@ enum {
 RaftRole role;
 struct sigaction heartbeat_action;
 struct itimerval heartbeat_timer;
+DDS_Duration_t election_timeout;
 uint32_t current_term;
 uint8_t voted_for;
 uint8_t replica_ID;
 uint8_t votes_received;
-uint8_t active_replicas = 2;
+uint8_t active_replicas = 3;
 bool leader_active;
 
 void send_heartbeat(int signum) {
@@ -35,10 +39,9 @@ void send_heartbeat(int signum) {
     DDS_ReturnCode_t status;
     RevPiDDS_AppendEntries* heartbeat_message;
 
-
-    // TODO
     heartbeat_message = RevPiDDS_AppendEntries__alloc();
     heartbeat_message->term = current_term;
+    heartbeat_message->senderID = replica_ID;
 
     printf("About to send heartbeat\n");
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, heartbeat_message, DDS_HANDLE_NIL);
@@ -53,6 +56,9 @@ void heartbeat_missed_callback(void* listener_data, DDS_DataReader reader, const
     (void) status;
 
     printf("Leader appears to be dead\n");
+    active_replicas--;
+    // TODO Should happen in background here
+    elect_new_leader();
     leader_active = false;
 
 }
@@ -60,12 +66,45 @@ void heartbeat_missed_callback(void* listener_data, DDS_DataReader reader, const
 void on_entry_available_callback(void* listener_data, DDS_DataReader reader) {
     (void) listener_data;
     (void) reader;
-    // DDS_sequence_RevPiDDS_AppendEntries msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
-    // DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
-    // DDS_ReturnCode_t status;
+    DDS_sequence_RevPiDDS_AppendEntries msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
+    DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
+    DDS_ReturnCode_t status;
+    uint32_t rec_term = 0;
+    uint8_t sender_ID = 0;
 
-    printf("Leader alive and kicking\n");
     leader_active = true;
+
+    status = RevPiDDS_AppendEntriesDataReader_take(
+        appendEntries_DataReader,
+        &msgSeq,
+        &infoSeq,
+        1,
+        DDS_ANY_SAMPLE_STATE,
+        DDS_ANY_VIEW_STATE,
+        DDS_ANY_INSTANCE_STATE
+    );
+    checkStatus(status, "RevPiDDS_appendEntriesDataReader_take");
+
+    if (msgSeq._length > 0 && infoSeq._buffer[0].valid_data) {
+        rec_term = msgSeq._buffer[0].term;
+        sender_ID = msgSeq._buffer[0].senderID;
+
+        // Answer to this properly
+
+        if (sender_ID != replica_ID) {
+            printf("Leader alive and kicking\n");
+            printf("Got an append Entry from %d: The term is: %d\n", sender_ID, rec_term);
+            if (rec_term > current_term) {
+                current_term = rec_term;
+                if (role == LEADER) {
+                    become_follower(current_term);
+                }
+            }
+        }
+
+    }
+
+    RevPiDDS_AppendEntriesDataReader_return_loan(appendEntries_DataReader, &msgSeq, &infoSeq);
 
     // TODO Check that this message is actually a confirmation conditions 
     // status = DDS_GuardCondition_set_trigger_value(voting_confirmed, TRUE);
@@ -80,11 +119,11 @@ void on_received_vote_reply_callback(void* listener_data, DDS_DataReader reader)
     DDS_ReturnCode_t status;
     uint32_t voteTerm = 0;
     uint8_t voted_candidate = 0;
+    uint8_t sender_ID;
     bool voteGranted = false;
 
     printf("Got a vote reply\n");
 
-    // TODO read incoming vote
     status = RevPiDDS_RequestVoteReplyDataReader_take(
         requestVoteReply_DataReader,
         &msgSeq,
@@ -99,8 +138,9 @@ void on_received_vote_reply_callback(void* listener_data, DDS_DataReader reader)
     if (msgSeq._length > 0 && infoSeq._buffer[0].valid_data) {
         voteTerm = msgSeq._buffer[0].term;
         voted_candidate = msgSeq._buffer[0].candidateID;
+        sender_ID = msgSeq._buffer[0].senderID;
         voteGranted = msgSeq._buffer[0].voteGranted;
-        printf("Got some new requestVoteReply Data - Term: %d Granted: %d\n", voteTerm, voteGranted);
+        printf("Got some new requestVoteReply Data from %d - Term: %d Granted: %d\n", sender_ID, voteTerm, voteGranted);
 
         if (voteGranted && voted_candidate == replica_ID) {
             printf("Vote for me got granted\n");
@@ -130,11 +170,11 @@ void on_received_vote_request_callback(void* listener_data, DDS_DataReader reade
     bool voteGranted = false;
     uint32_t voteTerm = 0;
     uint8_t voteCandidate = 0;
+    uint8_t sender_ID = 0;
     bool gotValidAndNewData = false;
 
     printf("Vote Incoming\n");
 
-    // TODO read incoming vote
     status = RevPiDDS_RequestVoteDataReader_take(
         requestVote_DataReader,
         &msgSeq,
@@ -149,7 +189,8 @@ void on_received_vote_request_callback(void* listener_data, DDS_DataReader reade
     if (msgSeq._length > 0 && infoSeq._buffer[0].valid_data) {
         voteTerm = msgSeq._buffer[0].term;
         voteCandidate = msgSeq._buffer[0].candidateID;
-        printf("Got this: voteTerm: %d candidate: %d\n", voteTerm, voteCandidate);
+        sender_ID = msgSeq._buffer[0].senderID;
+        // printf("Got this: voteTerm: %d candidate: %d\n", voteTerm, voteCandidate);
         if (voteCandidate != replica_ID && role == CANDIDATE) {
             gotValidAndNewData = true;
         }
@@ -158,7 +199,7 @@ void on_received_vote_request_callback(void* listener_data, DDS_DataReader reade
     RevPiDDS_RequestVoteDataReader_return_loan(requestVote_DataReader, &msgSeq, &infoSeq);
 
     if (gotValidAndNewData) {
-        printf("Got some new requestVote Data - voteTerm: %d candidate: %d\n", voteTerm, voteCandidate);
+        printf("Got some new requestVote Data from %d - voteTerm: %d candidate: %d\n", sender_ID, voteTerm, voteCandidate);
 
         if (voteTerm >= current_term) {
             voteGranted = true;
@@ -172,6 +213,7 @@ void on_received_vote_request_callback(void* listener_data, DDS_DataReader reade
         requestVoteReplyMessage->term = current_term;
         requestVoteReplyMessage->candidateID = voted_for;
         requestVoteReplyMessage->voteGranted = voteGranted;
+        requestVoteReplyMessage->senderID = replica_ID;
 
         printf("About to write onto RequestVoteReply Topic\n");
         status = RevPiDDS_RequestVoteReplyDataWriter_write(requestVoteReply_DataWriter, requestVoteReplyMessage, DDS_HANDLE_NIL);
@@ -181,12 +223,21 @@ void on_received_vote_request_callback(void* listener_data, DDS_DataReader reade
     }
 }
 
+void new_election_timer() {
+    
+    uint32_t random_election_timeout = ( rand() % 400 +  300) * 10^6;
+    
+    election_timeout.sec = 0;
+    election_timeout.nanosec = random_election_timeout;
+}
+
 void become_follower(const uint32_t term) {
     DDS_StatusMask mask;
     DDS_StatusMask requestVoteListener_Mask;
     DDS_StatusMask requestVoteReplyListener_Mask;
     DDS_ReturnCode_t status;
 
+    voted_for = VOTED_NONE;
     role = FOLLOWER;
     current_term = term;
 
@@ -196,7 +247,6 @@ void become_follower(const uint32_t term) {
     requestVote_Listener->listener_data = NULL;
     requestVote_Listener->on_data_available = on_received_vote_request_callback;
 
-    // TODO Validate mask
     requestVoteListener_Mask = DDS_DATA_AVAILABLE_STATUS;
     status = DDS_DataReader_set_listener(requestVote_DataReader, requestVote_Listener, requestVoteListener_Mask);
     checkStatus(status, "DDS_DataReader_set_listener (RequestVote)");
@@ -206,7 +256,6 @@ void become_follower(const uint32_t term) {
     appendEntries_Listener->on_data_available = on_entry_available_callback;
     appendEntries_Listener->on_requested_deadline_missed = heartbeat_missed_callback;
 
-    // TODO Validate mask
     mask = DDS_REQUESTED_DEADLINE_MISSED_STATUS | DDS_DATA_AVAILABLE_STATUS;
     status = DDS_DataReader_set_listener(appendEntries_DataReader, appendEntries_Listener, mask);
     checkStatus(status, "DDS_DataReader_set_listener (AppendEntries)");
@@ -220,34 +269,30 @@ void become_follower(const uint32_t term) {
 }
 
 void become_leader() {
-    DDS_StatusMask mask;
-    DDS_StatusMask requestVoteListener_Mask;
-    DDS_StatusMask requestVoteReplyListener_Mask;
-    DDS_ReturnCode_t status;
+    // DDS_StatusMask requestVoteListener_Mask;
+    // DDS_StatusMask requestVoteReplyListener_Mask;
+    // DDS_ReturnCode_t status;
 
     role = LEADER;
+    voted_for = VOTED_NONE;
 
-    appendEntries_Listener->on_data_available = NULL;
-    appendEntries_Listener->on_requested_deadline_missed = NULL;
+    // mask = DDS_DATA_AVAILABLE_STATUS;
+    // status = DDS_DataReader_set_listener(appendEntries_DataReader, appendEntries_Listener, mask);
+    // checkStatus(status, "DDS_DataReader_set_listener (AppendEntries)");
 
-    mask = DDS_REQUESTED_DEADLINE_MISSED_STATUS | DDS_DATA_AVAILABLE_STATUS;
-    status = DDS_DataReader_set_listener(appendEntries_DataReader, appendEntries_Listener, mask);
-    checkStatus(status, "DDS_DataReader_set_listener (AppendEntries)");
+    // requestVote_Listener->listener_data = NULL;
+    // requestVote_Listener->on_data_available = NULL;
 
-    requestVote_Listener->listener_data = NULL;
-    requestVote_Listener->on_data_available = NULL;
+    // requestVoteListener_Mask = DDS_DATA_AVAILABLE_STATUS;
+    // status = DDS_DataReader_set_listener(requestVote_DataReader, requestVote_Listener, requestVoteListener_Mask);
+    // checkStatus(status, "DDS_DataReader_set_listener (RequestVote)");
 
-    // TODO Validate mask
-    requestVoteListener_Mask = DDS_DATA_AVAILABLE_STATUS;
-    status = DDS_DataReader_set_listener(requestVote_DataReader, requestVote_Listener, requestVoteListener_Mask);
-    checkStatus(status, "DDS_DataReader_set_listener (RequestVote)");
+    // requestVoteReply_Listener->listener_data = NULL;
+    // requestVoteReply_Listener->on_data_available = NULL;
 
-    requestVoteReply_Listener->listener_data = NULL;
-    requestVoteReply_Listener->on_data_available = NULL;
-
-    requestVoteReplyListener_Mask = DDS_DATA_AVAILABLE_STATUS;
-    status = DDS_DataReader_set_listener(requestVoteReply_DataReader, requestVoteReply_Listener, requestVoteReplyListener_Mask);
-    checkStatus(status, "DDS_DataReader_set_listener (requestVoteReply)");
+    // requestVoteReplyListener_Mask = DDS_DATA_AVAILABLE_STATUS;
+    // status = DDS_DataReader_set_listener(requestVoteReply_DataReader, requestVoteReply_Listener, requestVoteReplyListener_Mask);
+    // checkStatus(status, "DDS_DataReader_set_listener (requestVoteReply)");
 
     if (setitimer(ITIMER_REAL, &heartbeat_timer, NULL) == -1) {
         perror("Error calling setitimer()");
@@ -260,22 +305,27 @@ void elect_new_leader() {
     RevPiDDS_RequestVote* requestVoteMessage;
     DDS_ReturnCode_t status;
     DDS_Duration_t election_timeout = {10, 0};
+    DDS_StatusMask mask; // TODO Better name
     DDS_StatusMask requestVoteReplyListener_Mask;
     unsigned long condition_index = 0;
     uint8_t election_result = 0;
 
+    mask = DDS_DATA_AVAILABLE_STATUS;
+    status = DDS_DataReader_set_listener(appendEntries_DataReader, appendEntries_Listener, mask);
+    checkStatus(status, "DDS_DataReader_set_listener (AppendEntries)");
+
     printf("Start new leader election\n");
     current_term++;
     role = CANDIDATE;
-    // TODO reset election timer
+    new_election_timer();
     voted_for = replica_ID;
 
     votes_received = 1;
 
-
     requestVoteMessage = RevPiDDS_RequestVote__alloc();
     requestVoteMessage->term = current_term;
-    requestVoteMessage->candidateID = replica_ID;
+    requestVoteMessage->candidateID = voted_for;
+    requestVoteMessage->senderID = replica_ID;
 
     printf("About to write onto RequestVote Topic\n");
     status = RevPiDDS_RequestVoteDataWriter_write(requestVote_DataWriter, requestVoteMessage, DDS_HANDLE_NIL);
@@ -333,8 +383,8 @@ void elect_new_leader() {
         become_leader();
         printf("I am a leader\n");
     } else {
-        // TODO Restart election
         printf("Election needs to be restarted\n");
+        elect_new_leader();
     }
 
     DDS_free(requestVoteMessage);
@@ -357,11 +407,10 @@ int main(int argc, char *argv[]) {
     DDS_SampleInfoSeq* message_infoSeq = DDS_SampleInfoSeq__alloc();
     DDS_Duration_t input_Timeout = DDS_DURATION_INFINITE;
     // TODO randomize
-    const DDS_Duration_t election_timeout = {1*replica_ID, 0};
 
     voted_for = VOTED_NONE;
 
-    memset(&heartbeat_action, 0, sizeof(heartbeat_action));
+    sigemptyset(&heartbeat_action.sa_mask);
     heartbeat_action.sa_handler = &send_heartbeat;
     sigaction (SIGALRM, &heartbeat_action, NULL);
 
@@ -372,7 +421,6 @@ int main(int argc, char *argv[]) {
     heartbeat_timer.it_interval.tv_usec = 0;
 
     DDSSetup();
-
 
     become_follower(0);
 
@@ -388,14 +436,11 @@ int main(int argc, char *argv[]) {
 
     status = DDS_WaitSet_detach_condition(appendEntries_WaitSet, appendEntries_ReadCondition);
     checkStatus(status, "DDS_WaitSet_detach_condition");
-    status = RevPiDDS_AppendEntriesDataReader_delete_readcondition(appendEntries_DataReader, appendEntries_ReadCondition);
-    checkStatus(status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition");
 
     status = DDS_WaitSet_attach_condition(input_WaitSet, input_ReadCondition);
     checkStatus(status, "DDS_WaitSet_attach_condition (input_ReadCondition)");
 
     status = DDS_WaitSet_wait(input_WaitSet, input_GuardList, &input_Timeout);
-
 
     if (status == DDS_RETCODE_OK) {
         input_index = 0;
@@ -415,6 +460,12 @@ int main(int argc, char *argv[]) {
             status = RevPiDDS_InputDataReader_return_loan(input_DataReader, message_seq, message_infoSeq);
             checkStatus(status, "RevPiDDS_InputDataReader_return_loan");
 
+            // TODO Process data
+
+            // TODO if follower publish to replica result
+            // If leader collect and vote
+
+
         } while ( ++input_index < input_GuardList->_length);
 
     } else {
@@ -426,6 +477,9 @@ int main(int argc, char *argv[]) {
 
     status = RevPiDDS_InputDataReader_delete_readcondition(input_DataReader, input_ReadCondition);
     checkStatus(status, "RevPiDDS_InputDataReader_delete_readcondition");
+
+    status = RevPiDDS_AppendEntriesDataReader_delete_readcondition(appendEntries_DataReader, appendEntries_ReadCondition);
+    checkStatus(status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition");
 
     DDSCleanup();
     DDS_free(message_seq);
