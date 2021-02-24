@@ -5,9 +5,13 @@
 #include "CheckStatus.h"
 #include "DDSEntitiesManager.h"
 
+DDS_char* electionTimer_QueryParameter;
+DDS_char* electionTimer_QueryString;
+
 DDS_Topic appendEntries_Topic, requestVote_Topic, requestVoteReply_Topic;
 DDS_WaitSet appendEntries_WaitSet, requestVote_WaitSet, requestVoteReply_WaitSet, collectVotes_WaitSet, election_WaitSet;
-DDS_ReadCondition electionTimer_ReadCondition, requestVote_ReadCondition, requestVoteReply_ReadCondition;
+DDS_ReadCondition /*electionTimer_ReadCondition, */requestVote_ReadCondition, requestVoteReply_ReadCondition;
+DDS_QueryCondition electionTimer_QueryCondition;
 DDS_GuardCondition become_follower_event, become_leader_event, start_election_event;
 DDS_Subscriber appendEntries_Subscriber, requestVote_Subscriber, requestVoteReply_Subscriber;
 DDS_DataReader appendEntries_DataReader, requestVote_DataReader, requestVoteReply_DataReader;
@@ -23,7 +27,7 @@ void createAppendEntriesTopic();
 void createRequestVoteTopic();
 void createRequestVoteReplyTopic();
 
-void createElectionTimerDDSFeatures();
+void createElectionTimerDDSFeatures(const uint8_t ID);
 void createLeaderElectionDDSFeatures();
 void createReceiveVotesDDSFeatures();
 

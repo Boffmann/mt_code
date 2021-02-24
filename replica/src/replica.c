@@ -130,7 +130,7 @@ void initialize_replica(const uint8_t id) {
     replica_t *new_replica;
 
     DDSSetupConsensus();
-    createElectionTimerDDSFeatures();
+    createElectionTimerDDSFeatures(id);
     createLeaderElectionDDSFeatures();
 
     new_replica = malloc(sizeof(replica_t));

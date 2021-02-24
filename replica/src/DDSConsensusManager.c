@@ -26,7 +26,7 @@ void DDSSetupConsensus() {
 }
 
 void DDSConsensusCleanup() {
-    g_status = DDS_WaitSet_detach_condition(appendEntries_WaitSet, electionTimer_ReadCondition);
+    g_status = DDS_WaitSet_detach_condition(appendEntries_WaitSet, electionTimer_QueryCondition);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (appendEntries_ReadCondition)");
     g_status = DDS_WaitSet_detach_condition(election_WaitSet, start_election_event);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (start election)");
@@ -49,10 +49,10 @@ void DDSConsensusCleanup() {
     DDS_free(appendEntries_GuardList);
     DDS_free(appendEntries_WaitSet);
 
-    g_status = DDS_WaitSet_detach_condition(appendEntries_WaitSet, electionTimer_ReadCondition);
+    g_status = DDS_WaitSet_detach_condition(appendEntries_WaitSet, electionTimer_QueryCondition);
     checkStatus(g_status, "DDS_WaitSet_detach_condition appendEntries_ReadCondition");
 
-    g_status = RevPiDDS_AppendEntriesDataReader_delete_readcondition(appendEntries_DataReader, electionTimer_ReadCondition);
+    g_status = RevPiDDS_AppendEntriesDataReader_delete_readcondition(appendEntries_DataReader, electionTimer_QueryCondition);
     checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition");
 }
 
@@ -354,15 +354,41 @@ void createRequestVoteReplyTopic() {
 
 }
 
-void createElectionTimerDDSFeatures() {
+void createElectionTimerDDSFeatures(const uint8_t ID) {
 
-    electionTimer_ReadCondition = DDS_DataReader_create_readcondition(
+    /*electionTimer_ReadCondition = DDS_DataReader_create_readcondition(
         appendEntries_DataReader,
         DDS_NOT_READ_SAMPLE_STATE,
         DDS_NEW_VIEW_STATE | DDS_NOT_NEW_VIEW_STATE,
         DDS_ALIVE_INSTANCE_STATE
     );
-    checkHandle(electionTimer_ReadCondition, "DDS_DataReader_create_readcondition (electionTimer)");
+    checkHandle(electionTimer_ReadCondition, "DDS_DataReader_create_readcondition (electionTimer)");*/
+
+    char ID_string[2];
+    sprintf(ID_string, "%d", ID);
+    electionTimer_QueryParameter = ID_string;
+    electionTimer_QueryString = "senderID!=%0";
+
+    DDS_StringSeq* query_parameters = DDS_StringSeq__alloc();
+
+    query_parameters->_length = 1;
+    query_parameters->_maximum = 1;
+    query_parameters->_release = TRUE;
+    query_parameters->_buffer = DDS_StringSeq_allocbuf (1);
+    checkHandle(query_parameters->_buffer, "DDS_StringSeq_allocbuf");
+    query_parameters->_buffer[0] = DDS_string_dup (electionTimer_QueryParameter);
+    checkHandle(query_parameters->_buffer[0], "DDS_string_dup");
+
+    electionTimer_QueryCondition = DDS_DataReader_create_querycondition(
+        appendEntries_DataReader,
+        DDS_NOT_READ_SAMPLE_STATE,
+        DDS_NEW_VIEW_STATE | DDS_NOT_NEW_VIEW_STATE,
+        DDS_ALIVE_INSTANCE_STATE,
+        electionTimer_QueryString,
+        query_parameters
+    );
+
+    DDS_free(query_parameters);
 
     appendEntries_WaitSet = DDS_WaitSet__alloc();
     checkHandle(appendEntries_WaitSet, "DDS_WaitSet__alloc appendEntries");
@@ -375,7 +401,7 @@ void createElectionTimerDDSFeatures() {
     appendEntries_GuardList->_buffer = DDS_ConditionSeq_allocbuf(1);
     checkHandle(appendEntries_GuardList->_buffer, "DDS_ConditionSeq_allocbuf");
 
-    g_status = DDS_WaitSet_attach_condition(appendEntries_WaitSet, electionTimer_ReadCondition);
+    g_status = DDS_WaitSet_attach_condition(appendEntries_WaitSet, electionTimer_QueryCondition);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (appendEntries_ReadCondition)");
 
 }
@@ -421,7 +447,7 @@ void createLeaderElectionDDSFeatures() {
     checkStatus(g_status, "DDS_WaitSet_attach_condition (become_leader)");
     g_status = DDS_WaitSet_attach_condition(collectVotes_WaitSet, become_follower_event);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (become_follower)");
-    g_status = DDS_WaitSet_attach_condition(collectVotes_WaitSet, electionTimer_ReadCondition);
+    g_status = DDS_WaitSet_attach_condition(collectVotes_WaitSet, electionTimer_QueryCondition);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (append Entries readCondition)");
 
     g_status = DDS_WaitSet_attach_condition(requestVoteReply_WaitSet, requestVoteReply_ReadCondition);

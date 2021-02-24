@@ -125,6 +125,8 @@ void *run_leader_election_thread() {
 
 
     while (true) {
+        election_result = 0;
+        condition_index = 0;
         printf("Wait for leader election to start\n");
         status = DDS_WaitSet_wait(election_WaitSet, election_GuardList, &voting_Timeout);
         printf("Start leader election\n");
@@ -178,7 +180,12 @@ void *run_leader_election_thread() {
                     checkStatus(status, "GGS_GuardCondition_set_trigger_value (become_leader FALSE)");
                 }
                 else if (collectVotes_GuardList->_buffer[condition_index] == become_follower_event ||
-                         collectVotes_GuardList->_buffer[condition_index] == electionTimer_ReadCondition) {
+                         collectVotes_GuardList->_buffer[condition_index] == electionTimer_QueryCondition) {
+                    if (collectVotes_GuardList->_buffer[condition_index] == become_follower_event) {
+                        printf("Received a become follower event\n");
+                    } else {
+                        printf("Received an election timer\n");
+                    }
                     election_result |= LOST_ELECTION;
                     status = DDS_GuardCondition_set_trigger_value(become_follower_event, FALSE);
                     checkStatus(status, "GGS_GuardCondition_set_trigger_value (become_follower FALSE)");
