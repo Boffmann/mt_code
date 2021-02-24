@@ -203,7 +203,6 @@ void *run_leader_election_thread() {
         } else {
             printf("Election needs to be restarted\n");
             // pthread_join(&receiveVotes_thread, NULL);
-            this_replica->current_term++;
             this_replica->voted_for = VOTED_NONE;
             status = DDS_GuardCondition_set_trigger_value(start_election_event, TRUE);
             checkStatus(status, "GGS_GuardCondition_set_trigger_value (Restart election)");
@@ -273,9 +272,9 @@ void *receive_vote_requests() {
                         pthread_mutex_unlock(&this_replica->consensus_mutex);
 
                         if (voteGranted) {
-                            printf("About to grant vote for replica %d with term %d\n", this_replica->voted_for, this_replica->current_term);
+                            printf("About to grant vote for replica %d with term %d\n", sender_ID, this_replica->current_term);
                         } else {
-                            printf("About to decline vote for replica %d with term %d\n", this_replica->voted_for, this_replica->current_term);
+                            printf("About to decline vote for replica %d with term %d because I already voted for %d\n", sender_ID, this_replica->current_term, this_replica->voted_for);
                         }
                         status = RevPiDDS_RequestVoteReplyDataWriter_write(requestVoteReply_DataWriter, requestVoteReplyMessage, DDS_HANDLE_NIL);
                         checkStatus(status, "RevPiDDS_RequestVoteReplyDataWriter_write");

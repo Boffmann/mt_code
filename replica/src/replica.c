@@ -10,11 +10,12 @@ void *runElectionTimer(void* param) {
 
     replica_t* replica = (replica_t *)param;
 
-    uint32_t term_started = replica->current_term;
+    // uint32_t term_started = replica->current_term;
     DDS_Duration_t election_timeout = {1 * replica->ID + 1 , 0};
     DDS_sequence_RevPiDDS_AppendEntries msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_ReturnCode_t status;
+    uint32_t received_Term = 0;
 
     while (true) {
 
@@ -28,11 +29,11 @@ void *runElectionTimer(void* param) {
             break;
         }
 
-        if (term_started != replica->current_term) {
-            printf("Election Timer triggered but term_started is outdated\n");
-            pthread_mutex_unlock(&replica->consensus_mutex);
-            break;
-        }
+        // if (term_started != replica->current_term) {
+        //     printf("Election Timer triggered but term_started is outdated\n");
+        //     pthread_mutex_unlock(&replica->consensus_mutex);
+        //     break;
+        // }
 
         if (status == DDS_RETCODE_TIMEOUT) {
             printf("No leader present in the system\n");
@@ -41,8 +42,6 @@ void *runElectionTimer(void* param) {
             checkStatus(status, "GGS_GuardCondition_set_trigger_value (start election TRUE)");
             break;
         } 
-        pthread_mutex_unlock(&replica->consensus_mutex);
-        printf("Election timer received\n");
 
         status = RevPiDDS_AppendEntriesDataReader_read(
             appendEntries_DataReader,
@@ -54,6 +53,20 @@ void *runElectionTimer(void* param) {
             DDS_ALIVE_INSTANCE_STATE
         );
         checkStatus(status, "RevPiDDS_AppendEntriesDataReader_read (election Timer)");
+        if (msgSeq._length > 0) {
+            for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
+                if (infoSeq._buffer[i].valid_data) {
+                    received_Term = msgSeq._buffer[i].term;
+                    if (received_Term > this_replica->current_term) {
+                        this_replica->current_term = received_Term;
+                        this_replica->voted_for = VOTED_NONE;
+                    }
+                }
+            }
+        }
+
+        printf("Election Timer received with term %d\n", this_replica->current_term);
+        pthread_mutex_unlock(&replica->consensus_mutex);
         RevPiDDS_AppendEntriesDataReader_return_loan(appendEntries_DataReader, &msgSeq, &infoSeq);
 
     }
@@ -64,16 +77,16 @@ void *runElectionTimer(void* param) {
 void send_heartbeat(int signum, siginfo_t* info, void* args) {
     (void) signum;
     (void) info;
-    replica_t* replica = (replica_t *) args;
+    (void) args;
 
     DDS_ReturnCode_t status;
     RevPiDDS_AppendEntries* heartbeat_message;
 
     heartbeat_message = RevPiDDS_AppendEntries__alloc();
-    heartbeat_message->term = replica->current_term;
-    heartbeat_message->senderID = replica->ID;
+    heartbeat_message->term = this_replica->current_term;
+    heartbeat_message->senderID = this_replica->ID;
 
-    printf("About to send heartbeat\n");
+    printf("About to send heartbeat with term %d\n", heartbeat_message->term);
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, heartbeat_message, DDS_HANDLE_NIL);
     checkStatus(status, "RevPiDDS_RequestVoteReplyDataWriter_write");
 
