@@ -29,10 +29,13 @@ set(generated_path "${CMAKE_BINARY_DIR}/gen")
 set(datamodel_lib datamodel)
 
 set(sources
+  ${source_path}/backgroundTasks.c
   ${source_path}/CheckStatus.c
+  ${source_path}/DDSConsensusManager.c
   ${source_path}/DDSEntitiesCreator.c
   ${source_path}/DDSEntitiesManager.c
   ${source_path}/main.c
+  ${source_path}/replica.c
 )
 
 #
@@ -64,5 +67,6 @@ target_link_libraries(${target}
   PRIVATE
   ${OSPL_LINK_LIBS}
   ${EVENT_LIBS}
+  pthread
   ${datamodel_lib}
 )

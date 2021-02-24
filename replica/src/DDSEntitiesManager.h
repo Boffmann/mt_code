@@ -8,26 +8,23 @@
 
 extern DDS_DomainParticipant domainParticipant;
 
-DDS_Topic input_Topic, appendEntries_Topic, requestVote_Topic, requestVoteReply_Topic, replicaResult_Topic;
-DDS_WaitSet input_WaitSet, appendEntries_WaitSet, leaderElection_WaitSet;
-DDS_ReadCondition input_ReadCondition, appendEntries_ReadCondition;
-DDS_GuardCondition won_election;
-DDS_Subscriber input_Subscriber, appendEntries_Subscriber, requestVote_Subscriber, requestVoteReply_Subscriber, replicaResult_Subscriber;
-DDS_DataReader input_DataReader, appendEntries_DataReader, requestVote_DataReader, requestVoteReply_DataReader, replicaResult_DataReader;
-DDS_Publisher appendEntries_Publisher, requestVote_Publisher, requestVoteReply_Publisher, replicaResult_Publisher;
-DDS_DataWriter appendEntries_DataWriter, requestVote_DataWriter, requestVoteReply_DataWriter, replicaResult_DataWriter;
-DDS_ConditionSeq *input_GuardList, *appendEntries_GuardList, *election_GuardList;
-struct DDS_DataReaderListener *appendEntries_Listener, *requestVote_Listener, *requestVoteReply_Listener, *replicaResult_Listener;
+DDS_Topic input_Topic, replicaResult_Topic;
+DDS_WaitSet input_WaitSet;
+DDS_ReadCondition input_ReadCondition;
+DDS_Subscriber input_Subscriber, replicaResult_Subscriber;
+DDS_DataReader input_DataReader, replicaResult_DataReader;
+DDS_Publisher replicaResult_Publisher;
+DDS_DataWriter replicaResult_DataWriter;
+DDS_ConditionSeq *input_GuardList;
+// struct DDS_DataReaderListener *appendEntries_Listener, *requestVote_Listener, *requestVoteReply_Listener, *replicaResult_Listener;
 
+extern DDS_DomainParticipant domainParticipant;
 extern const char* partitionName;
 
 void DDSSetup();
 void DDSCleanup();
 
 void createInputTopic();
-void createAppendEntriesTopic();
-void createRequestVoteTopic();
-void createRequestVoteReplyTopic();
 void createReplicaResultTopic();
 
 
