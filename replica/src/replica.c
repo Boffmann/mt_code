@@ -115,6 +115,13 @@ void become_follower(replica_t* replica) {
     replica->role = FOLLOWER;
     replica->voted_for = VOTED_NONE;
 
+    // TODO Stop the heartbeat sending
+    if (setitimer(ITIMER_REAL, NULL, NULL) == -1) {
+        pthread_mutex_unlock(&replica->consensus_mutex);
+        perror("Error calling setitimer()");
+        return;
+    }
+
     if (pthread_create(&replica->election_timer_thread, NULL, runElectionTimer, replica) != 0) {
         printf("Error creating election timer thread\n");
         pthread_mutex_unlock(&replica->consensus_mutex);
