@@ -23,12 +23,12 @@ DDS_ConditionSeq *appendEntries_GuardList, *requestVote_GuardList, *requestVoteR
 void DDSSetupConsensus();
 void DDSConsensusCleanup();
 
-void createAppendEntriesTopic();
-void createRequestVoteTopic();
-void createRequestVoteReplyTopic();
+// void createAppendEntriesTopic();
+// void createRequestVoteTopic();
+// void createRequestVoteReplyTopic();
+// void createReceiveVotesDDSFeatures();
 
 void createElectionTimerDDSFeatures(const uint8_t ID);
 void createLeaderElectionDDSFeatures();
-void createReceiveVotesDDSFeatures();
 
 #endif

@@ -8,7 +8,7 @@ void DDSSetup() {
     domainParticipant = createParticipant("Test_Partition");
 
     createInputTopic();
-    createReplicaResultTopic();
+    // createReplicaResultTopic();
 
     input_ReadCondition = DDS_DataReader_create_readcondition(
         input_DataReader,
@@ -18,10 +18,8 @@ void DDSSetup() {
     );
     checkHandle(input_ReadCondition, "DDS_DataReader_create_readcondition (input)");
 
-
     input_WaitSet = DDS_WaitSet__alloc();
     checkHandle(input_WaitSet, "DDS_WaitSet__alloc input");
-    
 
     input_GuardList = DDS_ConditionSeq__alloc();
     checkHandle(input_GuardList, "DDS_ConditionSeq__alloc");
@@ -30,14 +28,13 @@ void DDSSetup() {
     input_GuardList->_release = TRUE;
     input_GuardList->_buffer = DDS_ConditionSeq_allocbuf(1);
     checkHandle(input_GuardList->_buffer, "DDS_ConditionSeq_allocbuf");
-
 }
 
 void DDSCleanup() {
-    // deleteDataReaderListener(appendEntries_Listener);
-    // deleteDataReaderListener(requestVote_Listener);
-    // deleteDataReaderListener(requestVoteReply_Listener);
-    // deleteDataReaderListener(replicaResult_Listener);
+
+    g_status = RevPiDDS_InputDataReader_delete_readcondition(input_DataReader, input_ReadCondition);
+    checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (electionTimer)");
+
     deleteDataReader(input_Subscriber, input_DataReader);
     deleteDataReader(replicaResult_Subscriber, replicaResult_DataReader);
     deleteSubscriber(domainParticipant, input_Subscriber);
@@ -112,7 +109,6 @@ void createInputTopic() {
     input_DataReader = createDataReader(input_Subscriber, input_Topic, dataReaderQos);
 
     DDS_free(topicQos);
-    DDS_free(typeName);
     DDS_free(dataReaderQos);
     DDS_free(typeName);
     DDS_free(typeSupport);

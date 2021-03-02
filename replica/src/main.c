@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
     checkStatus(status, "RevPiDDS_InputDataReader_delete_readcondition");
 
 
+    teardown_replica();
     DDSCleanup();
     DDS_free(message_seq);
     DDS_free(message_infoSeq);

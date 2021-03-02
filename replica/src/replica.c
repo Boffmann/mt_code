@@ -165,3 +165,12 @@ void initialize_replica(const uint8_t id) {
     pthread_create(&new_replica->request_vote_thread, NULL, receive_vote_requests, NULL);
 
 }
+
+void teardown_replica() {
+    DDSConsensusCleanup();
+
+    pthread_cancel(this_replica->leader_election_thread);
+    pthread_cancel(this_replica->request_vote_thread);
+
+    free(this_replica);
+}
