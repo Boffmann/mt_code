@@ -5,13 +5,12 @@
 #include "DDSConsensusManager.h"
 #include "DIO.h"
 
-#include "backgroundTasks.h"
+#include "leaderElection.h"
 
 void *runElectionTimer(void* param) {
 
     replica_t* replica = (replica_t *)param;
 
-    // uint32_t term_started = replica->current_term;
     DDS_Duration_t election_timeout = {1 * replica->ID + 1 , 0};
     DDS_sequence_RevPiDDS_AppendEntries msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
@@ -30,45 +29,39 @@ void *runElectionTimer(void* param) {
             break;
         }
 
-        // if (term_started != replica->current_term) {
-        //     printf("Election Timer triggered but term_started is outdated\n");
-        //     pthread_mutex_unlock(&replica->consensus_mutex);
-        //     break;
-        // }
-
-        if (status == DDS_RETCODE_TIMEOUT) {
-            printf("No leader present in the system\n");
-            pthread_mutex_unlock(&replica->consensus_mutex);
-            status = DDS_GuardCondition_set_trigger_value(start_election_event, TRUE);
-            checkStatus(status, "GGS_GuardCondition_set_trigger_value (start election TRUE)");
-            break;
-        } 
-
-        status = RevPiDDS_AppendEntriesDataReader_read(
-            appendEntries_DataReader,
-            &msgSeq,
-            &infoSeq,
-            DDS_LENGTH_UNLIMITED,
-            DDS_NOT_READ_SAMPLE_STATE,
-            DDS_ANY_VIEW_STATE,
-            DDS_ALIVE_INSTANCE_STATE
-        );
-        checkStatus(status, "RevPiDDS_AppendEntriesDataReader_read (election Timer)");
-        if (msgSeq._length > 0) {
-            for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
-                if (infoSeq._buffer[i].valid_data) {
-                    received_Term = msgSeq._buffer[i].term;
-                    if (received_Term > this_replica->current_term) {
-                        this_replica->current_term = received_Term;
-                        this_replica->voted_for = VOTED_NONE;
+        if (status != DDS_RETCODE_TIMEOUT) {
+            status = RevPiDDS_AppendEntriesDataReader_read(
+                appendEntries_DataReader,
+                &msgSeq,
+                &infoSeq,
+                DDS_LENGTH_UNLIMITED,
+                DDS_NOT_READ_SAMPLE_STATE,
+                DDS_ANY_VIEW_STATE,
+                DDS_ALIVE_INSTANCE_STATE
+            );
+            checkStatus(status, "RevPiDDS_AppendEntriesDataReader_read (election Timer)");
+            if (msgSeq._length > 0) {
+                for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
+                    if (infoSeq._buffer[i].valid_data) {
+                        received_Term = msgSeq._buffer[i].term;
+                        if (received_Term > this_replica->current_term) {
+                            this_replica->current_term = received_Term;
+                            this_replica->voted_for = VOTED_NONE;
+                        }
                     }
                 }
             }
-        }
 
-        printf("Election Timer received with term %d\n", this_replica->current_term);
-        pthread_mutex_unlock(&replica->consensus_mutex);
-        RevPiDDS_AppendEntriesDataReader_return_loan(appendEntries_DataReader, &msgSeq, &infoSeq);
+            printf("Election Timer received with term %d\n", this_replica->current_term);
+            pthread_mutex_unlock(&replica->consensus_mutex);
+            RevPiDDS_AppendEntriesDataReader_return_loan(appendEntries_DataReader, &msgSeq, &infoSeq);
+        } else {
+            printf("No leader present in the system\n");
+            pthread_mutex_unlock(&replica->consensus_mutex);
+
+            run_leader_election();
+            break;
+        }
 
     }
 
@@ -120,7 +113,6 @@ void become_follower(replica_t* replica) {
     replica->role = FOLLOWER;
     replica->voted_for = VOTED_NONE;
 
-    // TODO Stop the heartbeat sending
     if (setitimer(ITIMER_REAL, NULL, NULL) == -1) {
         pthread_mutex_unlock(&replica->consensus_mutex);
         perror("Error calling setitimer()");
@@ -166,7 +158,6 @@ void initialize_replica(const uint8_t id) {
 
     this_replica = new_replica;
 
-    pthread_create(&new_replica->leader_election_thread, NULL, run_leader_election_thread, NULL);
     pthread_create(&new_replica->request_vote_thread, NULL, receive_vote_requests, NULL);
 
 }
@@ -174,7 +165,6 @@ void initialize_replica(const uint8_t id) {
 void teardown_replica() {
     DDSConsensusCleanup();
 
-    pthread_cancel(this_replica->leader_election_thread);
     pthread_cancel(this_replica->request_vote_thread);
 
     free(this_replica);

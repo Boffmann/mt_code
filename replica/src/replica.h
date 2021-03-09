@@ -36,7 +36,6 @@ typedef struct {
 
     pthread_mutex_t consensus_mutex;
     pthread_t election_timer_thread;
-    pthread_t leader_election_thread;
     pthread_t request_vote_thread;
 
     struct sigaction heartbeat_action;
