@@ -32,6 +32,7 @@ typedef struct {
     uint8_t ID;
     RaftRole role;
     uint32_t current_term;
+    uint32_t election_term;     // The term in which the replica candidated to become leader
     uint8_t voted_for;
 
     pthread_mutex_t consensus_mutex;
