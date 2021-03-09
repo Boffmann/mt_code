@@ -6,6 +6,8 @@
 
 #include "replica.h"
 
+uint8_t votes_received = 0;
+
 void *collect_votes() {
 
     DDS_sequence_RevPiDDS_RequestVoteReply msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
@@ -17,7 +19,7 @@ void *collect_votes() {
     bool voteGranted = false;
     DDS_Duration_t election_Timeout = {3, 0};
     uint32_t started_term;
-    uint8_t votes_received = 1;
+    votes_received = 1;
 
     bool is_collecting = true;
 
@@ -28,6 +30,15 @@ void *collect_votes() {
     while (is_collecting) {
 
         status = DDS_WaitSet_wait(requestVoteReply_WaitSet, requestVoteReply_GuardList, &election_Timeout);
+
+        if (status == DDS_RETCODE_PRECONDITION_NOT_MET) {
+            // There is already another thread collecting the votes.
+            // This means, during the waiting, another voting term was started.
+            // TODO Make this a permanent thread to prevent this from happen
+            // TODO Do in same move as merging the election timer and election thread
+            votes_received = 1;
+            break;
+        }
 
         if (status == DDS_RETCODE_TIMEOUT) {
             printf("Timeouted during waiting on vote collection\n");

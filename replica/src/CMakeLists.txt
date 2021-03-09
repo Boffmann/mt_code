@@ -34,6 +34,7 @@ set(sources
   ${source_path}/DDSConsensusManager.c
   ${source_path}/DDSEntitiesCreator.c
   ${source_path}/DDSEntitiesManager.c
+  ${source_path}/DIO.c
   ${source_path}/main.c
   ${source_path}/replica.c
 )

@@ -3,6 +3,7 @@
 #include "dds_dcps.h"
 #include "datamodel.h"
 #include "DDSConsensusManager.h"
+#include "DIO.h"
 
 #include "backgroundTasks.h"
 
@@ -97,6 +98,8 @@ void become_leader(replica_t* replica) {
 
     pthread_mutex_lock(&replica->consensus_mutex);
     printf("Make leader\n");
+    digital_write("O_1", 0);
+    digital_write("O_2", 1);
     replica->role = LEADER;
     replica->voted_for = VOTED_NONE;
 
@@ -112,6 +115,8 @@ void become_follower(replica_t* replica) {
 
     pthread_mutex_lock(&replica->consensus_mutex);
     printf("Make follower\n");
+    digital_write("O_1", 1);
+    digital_write("O_2", 0);
     replica->role = FOLLOWER;
     replica->voted_for = VOTED_NONE;
 

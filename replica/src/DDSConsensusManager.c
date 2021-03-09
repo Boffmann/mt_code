@@ -105,9 +105,9 @@ void createAppendEntriesTopic() {
     topicQos->history.depth = 5;
     topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topicQos->resource_limits.max_samples = 5;
+    topicQos->resource_limits.max_samples = 15;
     topicQos->resource_limits.max_instances = 1;
-    topicQos->resource_limits.max_samples_per_instance = 5;
+    topicQos->resource_limits.max_samples_per_instance = 15;
 
     // Create the Topic's in the DDS Domain.
     typeName = RevPiDDS_AppendEntriesTypeSupport_get_type_name(typeSupport);
@@ -204,9 +204,9 @@ void createRequestVoteTopic() {
     topicQos->history.depth = 5;
     topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topicQos->resource_limits.max_samples = 5;
+    topicQos->resource_limits.max_samples = 15;
     topicQos->resource_limits.max_instances = 1;
-    topicQos->resource_limits.max_samples_per_instance = 5;
+    topicQos->resource_limits.max_samples_per_instance = 15;
 
     // Create the Topic's in the DDS Domain.
     typeName = RevPiDDS_RequestVoteTypeSupport_get_type_name(typeSupport);
@@ -302,9 +302,9 @@ void createRequestVoteReplyTopic() {
     topicQos->history.depth = 5;
     topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topicQos->resource_limits.max_samples = 5;
+    topicQos->resource_limits.max_samples = 15;
     topicQos->resource_limits.max_instances = 1;
-    topicQos->resource_limits.max_samples_per_instance = 5;
+    topicQos->resource_limits.max_samples_per_instance = 15;
 
     // Create the Topic's in the DDS Domain.
     typeName = RevPiDDS_RequestVoteReplyTypeSupport_get_type_name(typeSupport);

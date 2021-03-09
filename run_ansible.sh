@@ -32,6 +32,8 @@ done
 if $HELP; then
   echo "-h|--help ------- Show this message"
   echo "-s|--shutdown --- Shut down all running Revolution Pis"
+  echo "-r|--run -------- Start the program on all replicas"
+  echo "-d|--deploy ---.. Copy the new version and compile on replicas"
 
   exit 0
 fi
