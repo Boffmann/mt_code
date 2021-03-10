@@ -17,10 +17,6 @@ void DDSSetupConsensus() {
 void DDSConsensusCleanup() {
     g_status = DDS_WaitSet_detach_condition(appendEntries_WaitSet, electionTimer_QueryCondition);
     checkStatus(g_status, "DDS_WaitSet_detach_condition (appendEntries_Waitset/electionTimer_QueryCondition)");
-    g_status = DDS_WaitSet_detach_condition(leaderElection_WaitSet, become_leader_event);
-    checkStatus(g_status, "DDS_WaitSet_detach_condition (leaderElection_Waitset/become_leader_event)");
-    g_status = DDS_WaitSet_detach_condition(leaderElection_WaitSet, become_follower_event);
-    checkStatus(g_status, "DDS_WaitSet_detach_condition (leaderElection_Waitset/become_follower_event)");
     g_status = DDS_WaitSet_detach_condition(leaderElection_WaitSet, electionTimer_QueryCondition);
     checkStatus(g_status, "DDS_WaitSet_detach_condition (leaderElection_Waitset/electionTimer_QueryCondition)");
     g_status = DDS_WaitSet_detach_condition(collectVotes_WaitSet, requestVote_ReadCondition);
@@ -59,8 +55,8 @@ void DDSConsensusCleanup() {
     DDS_free(leaderElection_WaitSet);
     DDS_free(collectVotes_WaitSet);
 
-    DDS_free(become_leader_event);
-    DDS_free(become_follower_event);
+    // DDS_free(become_leader_event);
+    // DDS_free(become_follower_event);
     DDS_free(start_election_event);
 
 }
@@ -409,10 +405,10 @@ void createLeaderElectionDDSFeatures() {
 
     leaderElection_GuardList = DDS_ConditionSeq__alloc();
     checkHandle(leaderElection_GuardList, "DDS_ConditionSeq__alloc");
-    leaderElection_GuardList->_maximum = 3;
+    leaderElection_GuardList->_maximum = 1;
     leaderElection_GuardList->_length = 0;
     leaderElection_GuardList->_release = TRUE;
-    leaderElection_GuardList->_buffer = DDS_ConditionSeq_allocbuf(3);
+    leaderElection_GuardList->_buffer = DDS_ConditionSeq_allocbuf(1);
     checkHandle(leaderElection_GuardList->_buffer, "DDS_ConditionSeq_allocbuf");
 
     appendEntries_GuardList = DDS_ConditionSeq__alloc();
@@ -425,10 +421,6 @@ void createLeaderElectionDDSFeatures() {
 
     start_election_event = DDS_GuardCondition__alloc();
     checkHandle(start_election_event, "DDS_GuardCondition__alloc");
-    become_leader_event = DDS_GuardCondition__alloc();
-    checkHandle(become_leader_event, "DDS_GuardCondition__alloc");
-    become_follower_event = DDS_GuardCondition__alloc();
-    checkHandle(become_follower_event, "DDS_GuardCondition__alloc");
 
     requestVoteReply_ReadCondition = DDS_DataReader_create_readcondition(
         requestVoteReply_DataReader,
@@ -451,10 +443,6 @@ void createLeaderElectionDDSFeatures() {
     g_status = DDS_WaitSet_attach_condition(collectVotes_WaitSet, requestVoteReply_ReadCondition);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (RequestVoteReply Readcondition)");
 
-    g_status = DDS_WaitSet_attach_condition(leaderElection_WaitSet, become_leader_event);
-    checkStatus(g_status, "DDS_WaitSet_attach_condition (become_leader)");
-    g_status = DDS_WaitSet_attach_condition(leaderElection_WaitSet, become_follower_event);
-    checkStatus(g_status, "DDS_WaitSet_attach_condition (become_follower)");
     g_status = DDS_WaitSet_attach_condition(leaderElection_WaitSet, electionTimer_QueryCondition);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (append Entries readCondition)");
 

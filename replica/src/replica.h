@@ -7,6 +7,8 @@
 #include <signal.h>
 #include <sys/time.h>
 
+#include "dds_dcps.h"
+
 #define VOTED_NONE 255
 #define ACTIVE_REPLICAS 3
 
@@ -41,6 +43,7 @@ typedef struct {
 
     struct sigaction heartbeat_action;
     struct itimerval heartbeat_timer;
+    DDS_Duration_t election_timeout;
 
 } replica_t;
 

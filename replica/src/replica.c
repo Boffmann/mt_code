@@ -1,17 +1,17 @@
 #include "replica.h"
 
-#include "dds_dcps.h"
+#include <time.h>
+#include <stdlib.h>
+
 #include "datamodel.h"
 #include "DDSConsensusManager.h"
 #include "DIO.h"
-
 #include "leaderElection.h"
 
 void *runElectionTimer(void* param) {
 
     replica_t* replica = (replica_t *)param;
 
-    DDS_Duration_t election_timeout = {1 * replica->ID + 1 , 0};
     DDS_sequence_RevPiDDS_AppendEntries msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_ReturnCode_t status;
@@ -19,15 +19,10 @@ void *runElectionTimer(void* param) {
 
     while (true) {
 
-        status = DDS_WaitSet_wait(appendEntries_WaitSet, appendEntries_GuardList, &election_timeout);
+        status = DDS_WaitSet_wait(appendEntries_WaitSet, appendEntries_GuardList, &this_replica->election_timeout);
 
         pthread_mutex_lock(&replica->consensus_mutex);
 
-        if (replica->role != FOLLOWER && replica->role != CANDIDATE) {
-            printf("Election Timer triggered but I'm leader\n");
-            pthread_mutex_unlock(&replica->consensus_mutex);
-            break;
-        }
 
         if (status != DDS_RETCODE_TIMEOUT) {
             status = RevPiDDS_AppendEntriesDataReader_read(
@@ -46,7 +41,7 @@ void *runElectionTimer(void* param) {
                         received_Term = msgSeq._buffer[i].term;
                         if (received_Term > this_replica->current_term) {
                             this_replica->current_term = received_Term;
-                            this_replica->voted_for = VOTED_NONE;
+                            become_follower(this_replica);
                         }
                     }
                 }
@@ -56,11 +51,13 @@ void *runElectionTimer(void* param) {
             pthread_mutex_unlock(&replica->consensus_mutex);
             RevPiDDS_AppendEntriesDataReader_return_loan(appendEntries_DataReader, &msgSeq, &infoSeq);
         } else {
+            if (replica->role != FOLLOWER && replica->role != CANDIDATE) {
+                printf("Election Timer timeouted but I'm leader\n");
+                pthread_mutex_unlock(&replica->consensus_mutex);
+                continue;
+            }
             printf("No leader present in the system\n");
-            pthread_mutex_unlock(&replica->consensus_mutex);
-
             run_leader_election();
-            break;
         }
 
     }
@@ -82,14 +79,17 @@ void send_heartbeat(int signum, siginfo_t* info, void* args) {
 
     printf("About to send heartbeat with term %d\n", heartbeat_message->term);
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, heartbeat_message, DDS_HANDLE_NIL);
-    checkStatus(status, "RevPiDDS_RequestVoteReplyDataWriter_write");
+    checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write heartbeat message");
 
     DDS_free(heartbeat_message);
 }
 
 void become_leader(replica_t* replica) {
 
-    pthread_mutex_lock(&replica->consensus_mutex);
+    if (replica->role == LEADER) {
+        return;
+    }
+
     printf("Make leader\n");
     digital_write("O_1", 0);
     digital_write("O_2", 1);
@@ -97,35 +97,27 @@ void become_leader(replica_t* replica) {
     replica->voted_for = VOTED_NONE;
 
     if (setitimer(ITIMER_REAL, &replica->heartbeat_timer, NULL) == -1) {
-        pthread_mutex_unlock(&replica->consensus_mutex);
         perror("Error calling setitimer()");
         return;
     }
-    pthread_mutex_unlock(&replica->consensus_mutex);
 }
 
 void become_follower(replica_t* replica) {
 
-    pthread_mutex_lock(&replica->consensus_mutex);
     printf("Make follower\n");
     digital_write("O_1", 1);
     digital_write("O_2", 0);
     replica->role = FOLLOWER;
     replica->voted_for = VOTED_NONE;
+    DDS_unsigned_long random_timeout = (rand() % 300000000) + 700000000;
+    replica->election_timeout.sec = 0;
+    replica->election_timeout.nanosec = random_timeout;
 
     if (setitimer(ITIMER_REAL, NULL, NULL) == -1) {
-        pthread_mutex_unlock(&replica->consensus_mutex);
         perror("Error calling setitimer()");
         return;
     }
 
-    if (pthread_create(&replica->election_timer_thread, NULL, runElectionTimer, replica) != 0) {
-        printf("Error creating election timer thread\n");
-        pthread_mutex_unlock(&replica->consensus_mutex);
-        exit (-1);
-    }
-
-    pthread_mutex_unlock(&replica->consensus_mutex);
     printf("Became follower with term: %d\n", replica->current_term);
 
 }
@@ -137,6 +129,8 @@ void initialize_replica(const uint8_t id) {
     createElectionTimerDDSFeatures(id);
     createLeaderElectionDDSFeatures();
 
+    srand(time(NULL));
+
     new_replica = malloc(sizeof(replica_t));
 
     new_replica->ID = id;
@@ -146,17 +140,22 @@ void initialize_replica(const uint8_t id) {
     new_replica->heartbeat_action.sa_sigaction = &send_heartbeat;
     sigaction (SIGALRM, &new_replica->heartbeat_action, NULL);
 
-    new_replica->heartbeat_timer.it_value.tv_sec = 1;
-    new_replica->heartbeat_timer.it_value.tv_usec = 0;
+    new_replica->heartbeat_timer.it_value.tv_sec = 0;
+    new_replica->heartbeat_timer.it_value.tv_usec = 50000;
 
-    new_replica->heartbeat_timer.it_interval.tv_sec = 1;
-    new_replica->heartbeat_timer.it_interval.tv_usec = 0;
+    new_replica->heartbeat_timer.it_interval.tv_sec = 0;
+    new_replica->heartbeat_timer.it_interval.tv_usec = 50000;
 
     pthread_mutex_init(&new_replica->consensus_mutex, NULL);
 
     become_follower(new_replica);
 
     this_replica = new_replica;
+
+    if (pthread_create(&new_replica->election_timer_thread, NULL, runElectionTimer, new_replica) != 0) {
+        printf("Error creating election timer thread\n");
+        exit (-1);
+    }
 
     pthread_create(&new_replica->request_vote_thread, NULL, receive_vote_requests, NULL);
 
