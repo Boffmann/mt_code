@@ -2,11 +2,10 @@
 #define __DDSENTITIESMANAGER_H__
 
 #include "dds_dcps.h"
-#include "CheckStatus.h"
-#include "DDSEntitiesCreator.h"
+#include "DDSCreator/CheckStatus.h"
+#include "DDSCreator/DDSEntitiesCreator.h"
 #include "datamodel.h"
 
-extern DDS_DomainParticipant domainParticipant;
 
 DDS_Topic input_Topic, replicaResult_Topic;
 DDS_WaitSet input_WaitSet;

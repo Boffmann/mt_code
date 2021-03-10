@@ -5,7 +5,7 @@
 
 #include "datamodel.h"
 #include "DDSConsensusManager.h"
-#include "DIO.h"
+#include "DIO/DIO.h"
 #include "leaderElection.h"
 
 void *runElectionTimer(void* param) {

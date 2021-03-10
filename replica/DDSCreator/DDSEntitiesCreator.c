@@ -3,6 +3,7 @@
 
 DDS_DomainId_t g_domainID = DDS_DOMAIN_ID_DEFAULT;
 DDS_DomainParticipantFactory g_domainParticipantFactory = DDS_OBJECT_NIL;
+DDS_DomainParticipant domainParticipant = DDS_OBJECT_NIL;
 
 // TODO Check if needs to cleanup
 const char* g_partitionName = DDS_OBJECT_NIL;
@@ -10,8 +11,6 @@ const char* g_partitionName = DDS_OBJECT_NIL;
 DDS_ReturnCode_t g_status;
 
 DDS_DomainParticipant createParticipant(const char* partitionName) {
-
-    DDS_DomainParticipant domainParticipant = DDS_OBJECT_NIL;
 
     g_domainParticipantFactory = DDS_DomainParticipantFactory_get_instance();
     checkHandle(g_domainParticipantFactory, "DDS_DomainParticipantFactory_get_instance");

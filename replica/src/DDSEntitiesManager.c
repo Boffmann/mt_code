@@ -1,12 +1,9 @@
 #include "DDSEntitiesManager.h"
 
-DDS_DomainParticipant domainParticipant = DDS_OBJECT_NIL;
-const char* partitionName = DDS_OBJECT_NIL;
 
 void DDSSetup() {
 
-    domainParticipant = createParticipant("Test_Partition");
-
+    createParticipant("Test_Partition");
     createInputTopic();
     // createReplicaResultTopic();
 

@@ -18,22 +18,17 @@ LINK_DIRECTORIES($ENV{EVENTLIB}/build/lib)
 set(OSPL_LINK_LIBS PUBLIC ddskernel dcpssac)
 set(EVENT_LIBS PUBLIC event)
 
-set(target replica)
+set(target DDSCreator)
 
 set(include_path 
   "${CMAKE_CURRENT_SOURCE_DIR}"
-  "${CMAKE_SOURCE_DIR}"
 )
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 set(generated_path "${CMAKE_BINARY_DIR}/gen")
 
-set(leaderElection_lib leaderElection)
-set(DDSCreator_lib DDSCreator)
-set(datamodel_lib datamodel)
-
 set(sources
-  ${source_path}/DDSEntitiesManager.c
-  ${source_path}/main.c
+  ${source_path}/CheckStatus.c
+  ${source_path}/DDSEntitiesCreator.c
 )
 
 #
@@ -41,7 +36,7 @@ set(sources
 #
 
 # Build executable
-add_executable(${target}
+add_library(${target} SHARED
   ${sources}
 )
 
@@ -65,6 +60,4 @@ target_link_libraries(${target}
   PRIVATE
   ${OSPL_LINK_LIBS}
   ${datamodel_lib}
-  ${DDSCreator_lib}
-  ${leaderElection_lib}
 )

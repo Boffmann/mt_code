@@ -38,5 +38,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 # Create version file
 file(WRITE "${PROJECT_BINARY_DIR}/VERSION" "${META_NAME_VERSION}")
 
+add_subdirectory(DIO)
 add_subdirectory(datamodel)
+add_subdirectory(DDSCreator)
+add_subdirectory(leaderElection)
 add_subdirectory(src)

@@ -5,6 +5,7 @@
 
 extern DDS_DomainId_t g_domainID;
 extern DDS_DomainParticipantFactory g_domainParticipantFactory;
+extern DDS_DomainParticipant domainParticipant;
 
 extern const char* g_partitionName;
 

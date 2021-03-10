@@ -2,8 +2,8 @@
 #define __DDSCONSENSUSMANAGER_H__
 
 #include "dds_dcps.h"
-#include "CheckStatus.h"
-#include "DDSEntitiesManager.h"
+#include "DDSCreator/CheckStatus.h"
+#include "DDSCreator/DDSEntitiesCreator.h"
 
 DDS_char* electionTimer_QueryParameter;
 DDS_char* electionTimer_QueryString;
