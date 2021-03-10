@@ -33,8 +33,7 @@ void run_leader_election() {
 
         requestVoteMessage = RevPiDDS_RequestVote__alloc();
         requestVoteMessage->term = this_replica->current_term;
-        requestVoteMessage->candidateID = this_replica->voted_for;
-        requestVoteMessage->senderID = this_replica->ID;
+        requestVoteMessage->senderID = this_replica->voted_for;
 
         printf("About to write onto RequestVote Topic\n");
         status = RevPiDDS_RequestVoteDataWriter_write(requestVote_DataWriter, requestVoteMessage, DDS_HANDLE_NIL);
@@ -94,9 +93,7 @@ void run_leader_election() {
             } while ( ++condition_index < collectVotes_GuardList->_length);
 
         } else if (status == DDS_RETCODE_TIMEOUT) {
-            pthread_mutex_lock(&this_replica->consensus_mutex);
             printf("Leader election timeouted\n");
-            pthread_mutex_unlock(&this_replica->consensus_mutex);
             election_finished = true;
         } else {
             // Some error happened.
@@ -115,7 +112,6 @@ void handle_vote_message() {
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     uint32_t voteTerm = 0;
     uint8_t voteCandidate = 0;
-    uint8_t sender_ID = 0;
     RevPiDDS_RequestVoteReply* requestVoteReplyMessage;
     bool voteGranted = false;
 
@@ -134,41 +130,38 @@ void handle_vote_message() {
         for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
             if (infoSeq._buffer[i].valid_data) {
                 voteTerm = msgSeq._buffer[i].term;
-                voteCandidate = msgSeq._buffer[i].candidateID;
-                sender_ID = msgSeq._buffer[i].senderID;
+                voteCandidate = msgSeq._buffer[i].senderID;
                 printf("Got this: voteTerm: %d candidate: %d\n", voteTerm, voteCandidate);
-                if (voteCandidate != this_replica->ID) {
 
-                    printf("Got some new requestVote Data from %d - voteTerm: %d candidate: %d my term: %d \n", sender_ID, voteTerm, voteCandidate, this_replica->current_term);
+                printf("Got some new requestVote Data from %d - voteTerm: %d candidate: %d my term: %d \n", voteCandidate, voteTerm, voteCandidate, this_replica->current_term);
 
-                    if (voteTerm > this_replica->current_term) {
-                        become_follower(voteTerm);
-                    }
-
-                    if (voteTerm == this_replica->current_term &&
-                        (this_replica->voted_for == VOTED_NONE || this_replica->voted_for == voteCandidate)) {
-                        this_replica->voted_for = voteCandidate;
-                        this_replica->current_term = voteTerm; // ADDED
-                        voteGranted = true;
-                    }
-
-                    requestVoteReplyMessage = RevPiDDS_RequestVoteReply__alloc();
-                    requestVoteReplyMessage->term = this_replica->current_term;
-                    requestVoteReplyMessage->candidateID = this_replica->voted_for;
-                    requestVoteReplyMessage->voteGranted = voteGranted;
-                    requestVoteReplyMessage->senderID = this_replica->ID;
-
-                    if (voteGranted) {
-                        printf("About to grant vote for replica %d with my current term %d\n", sender_ID, this_replica->current_term);
-                    } else {
-                        printf("About to decline vote for replica %d with term %d because I already voted for %d\n", sender_ID, this_replica->current_term, this_replica->voted_for);
-                    }
-                    status = RevPiDDS_RequestVoteReplyDataWriter_write(requestVoteReply_DataWriter, requestVoteReplyMessage, DDS_HANDLE_NIL);
-                    checkStatus(status, "RevPiDDS_RequestVoteReplyDataWriter_write");
-                    //  TODO Error in RevPiDDS_RequestVoteReplyDataWriter_write: DDS_RETCODE_OUT_OF_RESOURCES in term 7
-
-                    DDS_free(requestVoteReplyMessage);
+                if (voteTerm > this_replica->current_term) {
+                    become_follower(voteTerm);
                 }
+
+                if (voteTerm == this_replica->current_term &&
+                    (this_replica->voted_for == VOTED_NONE || this_replica->voted_for == voteCandidate)) {
+                    this_replica->voted_for = voteCandidate;
+                    this_replica->current_term = voteTerm;
+                    voteGranted = true;
+                }
+
+                requestVoteReplyMessage = RevPiDDS_RequestVoteReply__alloc();
+                requestVoteReplyMessage->term = this_replica->current_term;
+                requestVoteReplyMessage->candidateID = this_replica->voted_for;
+                requestVoteReplyMessage->voteGranted = voteGranted;
+                requestVoteReplyMessage->senderID = this_replica->ID;
+
+                if (voteGranted) {
+                    printf("About to grant vote for replica %d with my current term %d\n", voteCandidate, this_replica->current_term);
+                } else {
+                    printf("About to decline vote for replica %d with term %d because I already voted for %d\n", voteCandidate, this_replica->current_term, this_replica->voted_for);
+                }
+                status = RevPiDDS_RequestVoteReplyDataWriter_write(requestVoteReply_DataWriter, requestVoteReplyMessage, DDS_HANDLE_NIL);
+                checkStatus(status, "RevPiDDS_RequestVoteReplyDataWriter_write");
+                //  TODO Error in RevPiDDS_RequestVoteReplyDataWriter_write: DDS_RETCODE_OUT_OF_RESOURCES in term 7
+
+                DDS_free(requestVoteReplyMessage);
             }
         }
     }
@@ -212,12 +205,6 @@ void handle_vote_reply_message() {
                 voteGranted = msgSeq._buffer[i].voteGranted;
                 printf("Got some new requestVoteReply Data from %d - Term: %d Granted: %d voted for: %d\n", sender_ID, voteTerm, voteGranted, voted_candidate);
                 
-                if (sender_ID == this_replica->ID) {
-                    printf("Got a vote reply, but from myself\n");
-                    RevPiDDS_RequestVoteReplyDataReader_return_loan(requestVoteReply_DataReader, &msgSeq, &infoSeq);
-                    continue;
-                }
-
                 if (this_replica->role != CANDIDATE) {
                     printf("Got a vote reply, but I'm not candidate anymore\n");
                     pthread_mutex_unlock(&this_replica->consensus_mutex);
@@ -261,11 +248,11 @@ void *receive_vote_requests() {
         if (status == DDS_RETCODE_OK) {
             guardList_index = 0;
             do {
-                if (collectVotes_GuardList->_buffer[guardList_index] == requestVoteReply_ReadCondition) {
+                if (collectVotes_GuardList->_buffer[guardList_index] == requestVoteReply_QueryCondition) {
                     pthread_mutex_lock(&this_replica->consensus_mutex);
                     handle_vote_reply_message();
                     pthread_mutex_unlock(&this_replica->consensus_mutex);
-                } else if (collectVotes_GuardList->_buffer[guardList_index] == requestVote_ReadCondition) {
+                } else if (collectVotes_GuardList->_buffer[guardList_index] == requestVote_QueryCondition) {
                     pthread_mutex_lock(&this_replica->consensus_mutex);
                     handle_vote_message();
                     pthread_mutex_unlock(&this_replica->consensus_mutex);

@@ -11,9 +11,8 @@ module RevPiDDS {
   #pragma keylist AppendEntries term
 
   struct RequestVote {
-    long senderID;
     long term;
-    long candidateID;
+    long senderID;
   };
   #pragma keylist RequestVote
 

@@ -21,7 +21,6 @@ void *runElectionTimer() {
 
         pthread_mutex_lock(&this_replica->consensus_mutex);
 
-
         if (status != DDS_RETCODE_TIMEOUT) {
             status = RevPiDDS_AppendEntriesDataReader_read(
                 appendEntries_DataReader,
@@ -107,9 +106,6 @@ void become_follower(const uint32_t term) {
     this_replica->current_term = term;
     this_replica->role = FOLLOWER;
     this_replica->voted_for = VOTED_NONE;
-    DDS_unsigned_long random_timeout = (rand() % 300000000) + 700000000;
-    this_replica->election_timeout.sec = 0;
-    this_replica->election_timeout.nanosec = random_timeout;
 
     if (setitimer(ITIMER_REAL, NULL, NULL) == -1) {
         perror("Error calling setitimer()");
@@ -124,10 +120,10 @@ void initialize_replica(const uint8_t id) {
     replica_t *new_replica;
 
     DDSSetupConsensus();
-    createElectionTimerDDSFeatures(id);
-    createLeaderElectionDDSFeatures();
+    createLeaderElectionDDSFeatures(id);
 
     srand(time(NULL));
+    DDS_unsigned_long random_timeout = (rand() % 300000000) + 700000000;
 
     new_replica = malloc(sizeof(replica_t));
 
@@ -142,6 +138,9 @@ void initialize_replica(const uint8_t id) {
 
     new_replica->heartbeat_timer.it_interval.tv_sec = 0;
     new_replica->heartbeat_timer.it_interval.tv_usec = 50000;
+
+    new_replica->election_timeout.sec = 0;
+    new_replica->election_timeout.nanosec = random_timeout;
 
     pthread_mutex_init(&new_replica->consensus_mutex, NULL);
 
