@@ -52,7 +52,7 @@ replica_t* this_replica;
 void initialize_replica(const uint8_t id);
 void teardown_replica();
 
-void become_follower(replica_t* replica);
-void become_leader(replica_t* replica);
+void become_follower(const uint32_t term);
+void become_leader();
 
 #endif

@@ -73,14 +73,13 @@ void run_leader_election() {
                             if (infoSeq._buffer[i].valid_data) {
                                 received_Term = msgSeq._buffer[i].term;
                                 if (received_Term > this_replica->current_term) {
-                                    this_replica->current_term = received_Term;
                                     printf("I am becoming a follower\n");
-                                    become_follower(this_replica);
+                                    become_follower(received_Term);
                                     printf("I am a follower\n");
                                 }
                                 if (received_Term == this_replica->current_term) {
                                     if (this_replica->role != FOLLOWER) {
-                                        become_follower(this_replica);
+                                        become_follower(received_Term);
                                     }
                                     election_finished = true;
                                 }
@@ -143,8 +142,7 @@ void handle_vote_message() {
                     printf("Got some new requestVote Data from %d - voteTerm: %d candidate: %d my term: %d \n", sender_ID, voteTerm, voteCandidate, this_replica->current_term);
 
                     if (voteTerm > this_replica->current_term) {
-                        this_replica->current_term = voteTerm;
-                        become_follower(this_replica);
+                        become_follower(voteTerm);
                     }
 
                     if (voteTerm == this_replica->current_term &&
@@ -230,8 +228,7 @@ void handle_vote_reply_message() {
                 if (voteTerm > this_replica->election_term) {
                     printf("My term is out of date. Time to become Follower\n");
                     RevPiDDS_RequestVoteReplyDataReader_return_loan(requestVoteReply_DataReader, &msgSeq, &infoSeq);
-                    this_replica->current_term = voteTerm;
-                    become_follower(this_replica);
+                    become_follower(voteTerm);
                     break;
                 }
 
