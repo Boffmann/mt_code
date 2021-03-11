@@ -3,7 +3,7 @@
 #include <sys/time.h>
 
 #include "dds_dcps.h"
-#include "leaderElection/replica.h"
+#include "consensus/replica.h"
 #include "DDSCreator/CheckStatus.h"
 #include "DDSEntitiesManager.h"
 #include "datamodel.h"

@@ -27,7 +27,7 @@ set(include_path
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 set(generated_path "${CMAKE_BINARY_DIR}/gen")
 
-set(leaderElection_lib leaderElection)
+set(consensus_lib consensus)
 set(DDSCreator_lib DDSCreator)
 set(datamodel_lib datamodel)
 
@@ -66,5 +66,5 @@ target_link_libraries(${target}
   ${OSPL_LINK_LIBS}
   ${datamodel_lib}
   ${DDSCreator_lib}
-  ${leaderElection_lib}
+  ${consensus_lib}
 )

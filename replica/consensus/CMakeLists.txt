@@ -18,7 +18,7 @@ LINK_DIRECTORIES($ENV{EVENTLIB}/build/lib)
 set(OSPL_LINK_LIBS PUBLIC ddskernel dcpssac)
 set(EVENT_LIBS PUBLIC event)
 
-set(target leaderElection)
+set(target consensus)
 
 set(include_path 
   "${CMAKE_CURRENT_SOURCE_DIR}"
