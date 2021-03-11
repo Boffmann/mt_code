@@ -23,6 +23,11 @@ struct CollectVotesParams {
     uint8_t votes_received;
 };
 
+typedef struct {
+    uint32_t id;
+    uint32_t term;
+} log_entry_t;
+
 typedef enum {
     FOLLOWER,
     CANDIDATE,
@@ -45,6 +50,15 @@ typedef struct {
     struct itimerval heartbeat_timer;
     DDS_Duration_t election_timeout;
 
+    log_entry_t *log;
+    size_t log_size;
+
+    uint32_t commitIndex;
+    uint32_t lastApplied;
+
+    uint32_t nextIndex;
+    uint32_t matchIndex;
+
 } replica_t;
 
 replica_t* this_replica;
@@ -55,4 +69,6 @@ void teardown_replica();
 void become_follower(const uint32_t term);
 void become_leader();
 
+void append_to_log(const log_entry_t entry);
+void insert_log_entry_at(log_entry_t entry, size_t index);
 #endif

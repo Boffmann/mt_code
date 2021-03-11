@@ -18,6 +18,8 @@ void run_leader_election() {
     DDS_Duration_t election_Timeout = {4 * this_replica->ID + 4 , 0};
     uint32_t received_Term = 0;
     bool election_finished = false;
+    int lastLogIndex = -1;
+    int lastLogTerm = -1;
 
     while (!election_finished) {
         condition_index = 0;
@@ -31,9 +33,16 @@ void run_leader_election() {
         this_replica->voted_for = this_replica->ID;
         votes_received = 1;
 
+        if (this_replica->log_size > 0) {
+            lastLogIndex = this_replica->log_size - 1;
+            lastLogTerm = this_replica->log[lastLogIndex].term;
+        }
+
         requestVoteMessage = RevPiDDS_RequestVote__alloc();
         requestVoteMessage->term = this_replica->current_term;
         requestVoteMessage->senderID = this_replica->voted_for;
+        requestVoteMessage->lastLogIndex = lastLogIndex;
+        requestVoteMessage->lastLogTerm = lastLogTerm;
 
         printf("About to write onto RequestVote Topic\n");
         status = RevPiDDS_RequestVoteDataWriter_write(requestVote_DataWriter, requestVoteMessage, DDS_HANDLE_NIL);
@@ -112,8 +121,12 @@ void handle_vote_message() {
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     uint32_t voteTerm = 0;
     uint8_t voteCandidate = 0;
+    int received_lastLogIndex = -1;
+    int received_lastLogTerm = -1;
     RevPiDDS_RequestVoteReply* requestVoteReplyMessage;
     bool voteGranted = false;
+    int lastLogIndex = -1;
+    int lastLogTerm = -1;
 
     status = RevPiDDS_RequestVoteDataReader_take(
         requestVote_DataReader,
@@ -131,16 +144,25 @@ void handle_vote_message() {
             if (infoSeq._buffer[i].valid_data) {
                 voteTerm = msgSeq._buffer[i].term;
                 voteCandidate = msgSeq._buffer[i].senderID;
+                received_lastLogIndex = msgSeq._buffer[i].lastLogIndex;
+                received_lastLogTerm = msgSeq._buffer[-1].lastLogTerm;
                 printf("Got this: voteTerm: %d candidate: %d\n", voteTerm, voteCandidate);
 
                 printf("Got some new requestVote Data from %d - voteTerm: %d candidate: %d my term: %d \n", voteCandidate, voteTerm, voteCandidate, this_replica->current_term);
+
+                if (this_replica->log_size > 0) {
+                    lastLogIndex = this_replica->log_size - 1;
+                    lastLogTerm = this_replica->log[lastLogIndex].term;
+                }
 
                 if (voteTerm > this_replica->current_term) {
                     become_follower(voteTerm);
                 }
 
                 if (voteTerm == this_replica->current_term &&
-                    (this_replica->voted_for == VOTED_NONE || this_replica->voted_for == voteCandidate)) {
+                    (this_replica->voted_for == VOTED_NONE || this_replica->voted_for == voteCandidate) &&
+                    (received_lastLogTerm > lastLogTerm ||
+                    (received_lastLogTerm == lastLogTerm && received_lastLogIndex >= lastLogIndex))) {
                     this_replica->voted_for = voteCandidate;
                     this_replica->current_term = voteTerm;
                     voteGranted = true;
@@ -180,7 +202,7 @@ void handle_vote_reply_message() {
     uint8_t sender_ID;
     bool voteGranted = false;
 
-    // TODO Waitset with read  event
+    // TODO Waitset with read event
 
     printf("Got a vote reply\n");
 
@@ -193,8 +215,8 @@ void handle_vote_reply_message() {
         DDS_ANY_VIEW_STATE,
         DDS_ANY_INSTANCE_STATE
     );
-
     checkStatus(status, "RevPiDDS_RequestVoteReplyDataReader_take");
+
     if (msgSeq._length > 0) {
 
         for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
