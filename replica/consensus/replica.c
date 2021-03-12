@@ -15,10 +15,6 @@ void *runElectionTimer() {
     RevPiDDS_AppendEntriesReply* appendEntriesReply_message;
     DDS_ReturnCode_t status;
     uint32_t received_Term = 0;
-    int received_prevLogIndex = 0;
-    uint32_t received_prevLogTerm = 0;
-    uint32_t received_leaderCommit = 0;
-    DDS_sequence_RevPiDDS_Entry entries_Seq;
 
     while (true) {
 
@@ -41,10 +37,6 @@ void *runElectionTimer() {
                 for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
                     if (infoSeq._buffer[i].valid_data) {
                         received_Term = msgSeq._buffer[i].term;
-                        received_prevLogIndex = msgSeq._buffer[i].prevLogIndex;
-                        received_prevLogTerm = msgSeq._buffer[i].prevLogTerm;
-                        received_leaderCommit = msgSeq._buffer[i].leaderCommit;
-                        entries_Seq = msgSeq._buffer[i].entries;
                         if (received_Term > this_replica->current_term) {
                             become_follower(received_Term);
                         }
@@ -55,41 +47,13 @@ void *runElectionTimer() {
                                 become_follower(received_Term);
                             }
 
-                            if (received_prevLogIndex == -1 ||
-                                ((received_prevLogIndex == -1 || (size_t)received_prevLogIndex < this_replica->log_size) && received_prevLogTerm == this_replica->log[received_prevLogIndex].term)) {
-                                success = true;
-                                uint32_t logInsertIndex = received_prevLogIndex + 1;
-                                uint32_t newEntryIndex = 0;
-                                while (true) {
-                                    if (logInsertIndex >= this_replica->log_size || newEntryIndex >= this_replica->log_size) {
-                                        break;
-                                    }
-                                    logInsertIndex++;
-                                    newEntryIndex++;
-                                }
-
-                                if (newEntryIndex < this_replica->log_size) {
-                                    printf("Inserting entries from index %d\n", logInsertIndex);
-                                    for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
-                                        log_entry_t entry;
-                                        entry.id = entries_Seq._buffer[entry_index].id;
-                                        entry.term = received_Term;
-                                        insert_log_entry_at(entry, logInsertIndex + entry_index);
-                                    }
-                                }
-
-                                if (received_leaderCommit > this_replica->commitIndex) {
-                                    this_replica->commitIndex = fmin(received_leaderCommit, this_replica->log_size-1);
-                                    // TODO new Commit Ready
-                                }
-                            }
+                            success = true;
                         }
 
                         appendEntriesReply_message = RevPiDDS_AppendEntriesReply__alloc();
                         appendEntriesReply_message->senderID = this_replica->ID;
                         appendEntriesReply_message->term = this_replica->current_term;
                         appendEntriesReply_message->success = success;
-                        pthread_mutex_unlock(&this_replica->consensus_mutex);
 
                         status = RevPiDDS_AppendEntriesReplyDataWriter_write(appendEntriesReply_DataWriter, appendEntriesReply_message, DDS_HANDLE_NIL);
                         checkStatus(status, "RevPiDDS_AppendEntriesReplyDataWriter write AppendEntriesReply");
@@ -109,11 +73,48 @@ void *runElectionTimer() {
             }
             printf("No leader present in the system\n");
             run_leader_election();
+            pthread_mutex_unlock(&this_replica->consensus_mutex);
         }
 
     }
 
     pthread_exit(NULL);
+}
+
+void handle_appendEntries_reply_message() {
+    DDS_sequence_RevPiDDS_AppendEntriesReply msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
+    DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
+    DDS_ReturnCode_t status;
+    uint32_t received_Term = 0;
+    uint32_t reply_ID;
+    uint8_t sender_ID;
+    bool success = false;
+
+    status = RevPiDDS_AppendEntriesReplyDataReader_take(
+        appendEntriesReply_DataReader,
+        &msgSeq,
+        &infoSeq,
+        DDS_LENGTH_UNLIMITED,
+        DDS_NOT_READ_SAMPLE_STATE,
+        DDS_ANY_VIEW_STATE,
+        DDS_ANY_INSTANCE_STATE
+    );
+    checkStatus(status, "RevPiDDS_AppendEntriesReplyDataReader_take");
+
+    if (msgSeq._length > 0) {
+
+        for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
+            if (infoSeq._buffer[i].valid_data) {
+                received_Term = msgSeq._buffer[i].term;
+                sender_ID = msgSeq._buffer[i].senderID;
+                reply_ID = msgSeq._buffer[i].id;
+                success = msgSeq._buffer[i].success;
+                printf("Got some new appendEntriesReply Data from %d - ReplyID: %d Term: %d Success: %d\n", sender_ID, reply_ID, received_Term, success);
+                
+            }
+        }
+    }
+    RevPiDDS_AppendEntriesReplyDataReader_return_loan(appendEntriesReply_DataReader, &msgSeq, &infoSeq);
 }
 
 void send_heartbeat(int signum, siginfo_t* info, void* args) {
@@ -123,6 +124,7 @@ void send_heartbeat(int signum, siginfo_t* info, void* args) {
 
     DDS_ReturnCode_t status;
     RevPiDDS_AppendEntries* appendEntries_message;
+    DDS_Duration_t timeout = {0 , 500000000};
 
     pthread_mutex_lock(&this_replica->consensus_mutex);
     int prevLogIndex = this_replica->nextIndex - 1;
@@ -138,13 +140,25 @@ void send_heartbeat(int signum, siginfo_t* info, void* args) {
     appendEntries_message->prevLogIndex = prevLogIndex;
     appendEntries_message->prevLogTerm = prevLogTerm;
     appendEntries_message->senderID = this_replica->commitIndex;
-    // TODO Add actual entries
+    uint8_t payload_size = this_replica->log_size - this_replica->nextIndex;
+    appendEntries_message->entries._length = payload_size;
+    appendEntries_message->entries._maximum = payload_size;
+    appendEntries_message->entries._buffer = DDS_sequence_RevPiDDS_Entry_allocbuf(payload_size);
+    for (uint8_t i = 0; i < payload_size; i++) {
+        appendEntries_message->entries._buffer[i].id = this_replica->log[i].id;
+    }
     pthread_mutex_unlock(&this_replica->consensus_mutex);
 
     printf("About to send heartbeat with term %d\n", appendEntries_message->term);
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
     checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write heartbeat message");
-     // TODO Write appendEntriesReply handler
+
+    status = DDS_WaitSet_wait(appendEntriesReply_WaitSet, appendEntriesReply_GuardList, &timeout);
+    if (status == DDS_RETCODE_OK) {
+        pthread_mutex_lock(&this_replica->consensus_mutex);
+        handle_appendEntries_reply_message();
+        pthread_mutex_unlock(&this_replica->consensus_mutex);
+    }
 
     DDS_free(appendEntries_message);
 }
@@ -206,13 +220,13 @@ void initialize_replica(const uint8_t id) {
     // There should be a timeout to when the final result should be made by the followers
     // When this exeeds, trigger safety mechanisms
     // Heartbeat timer should be a little above this timeout
-    this_replica->heartbeat_timer.it_value.tv_sec = 0;
+    this_replica->heartbeat_timer.it_value.tv_sec = 1;
     this_replica->heartbeat_timer.it_value.tv_usec = 50000;
 
-    this_replica->heartbeat_timer.it_interval.tv_sec = 0;
+    this_replica->heartbeat_timer.it_interval.tv_sec = 1;
     this_replica->heartbeat_timer.it_interval.tv_usec = 50000;
 
-    this_replica->election_timeout.sec = 0;
+    this_replica->election_timeout.sec = 1;
     this_replica->election_timeout.nanosec = random_timeout;
 
     this_replica->log_size = 0;

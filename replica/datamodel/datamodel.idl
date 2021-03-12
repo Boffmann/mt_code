@@ -12,15 +12,13 @@ module RevPiDDS {
   struct AppendEntries {
     long term;
     long senderID;
-    long prevLogIndex;
-    long prevLogTerm;
-    long leaderCommit;
     sequence<Entry> entries;
   };
   #pragma keylist AppendEntries term
 
   struct AppendEntriesReply {
     long senderID;
+    long id;
     long term;
     long success;
   };
@@ -29,8 +27,6 @@ module RevPiDDS {
   struct RequestVote {
     long term;
     long senderID;
-    long lastLogIndex;
-    long lastLogTerm;
   };
   #pragma keylist RequestVote
 

@@ -2,6 +2,7 @@
 #include "datamodel.h"
 
 void createAppendEntriesTopic();
+void createAppendEntriesReplyTopic();
 void createRequestVoteTopic();
 void createRequestVoteReplyTopic();
 void createReceiveVotesDDSFeatures();
@@ -9,6 +10,7 @@ void createReceiveVotesDDSFeatures();
 void DDSSetupConsensus() {
 
     createAppendEntriesTopic();
+    createAppendEntriesReplyTopic();
     createRequestVoteTopic();
     createRequestVoteReplyTopic();
 
@@ -17,6 +19,8 @@ void DDSSetupConsensus() {
 void DDSConsensusCleanup() {
     g_status = DDS_WaitSet_detach_condition(appendEntries_WaitSet, electionTimer_QueryCondition);
     checkStatus(g_status, "DDS_WaitSet_detach_condition (appendEntries_Waitset/electionTimer_QueryCondition)");
+    g_status = DDS_WaitSet_detach_condition(appendEntriesReply_WaitSet, appendEntriesReply_QueryCondition);
+    checkStatus(g_status, "DDS_WaitSet_detach_condition (appendEntriesReply_Waitset/ QUeryCondition)");
     g_status = DDS_WaitSet_detach_condition(leaderElection_WaitSet, electionTimer_QueryCondition);
     checkStatus(g_status, "DDS_WaitSet_detach_condition (leaderElection_Waitset/electionTimer_QueryCondition)");
     g_status = DDS_WaitSet_detach_condition(collectVotes_WaitSet, requestVote_QueryCondition);
@@ -469,6 +473,9 @@ void createLeaderElectionDDSFeatures(const uint8_t ID) {
     appendEntries_WaitSet = DDS_WaitSet__alloc();
     checkHandle(appendEntries_WaitSet, "DDS_WaitSet__alloc appendEntries");
 
+    appendEntriesReply_WaitSet = DDS_WaitSet__alloc();
+    checkHandle(appendEntriesReply_WaitSet, "DDS_WaitSet__alloc appendEntriesReply");
+
     collectVotes_WaitSet = DDS_WaitSet__alloc();
     checkHandle(collectVotes_WaitSet, "DDS_WaitSet__alloc requestVote");
 
@@ -495,6 +502,14 @@ void createLeaderElectionDDSFeatures(const uint8_t ID) {
     appendEntries_GuardList->_release = TRUE;
     appendEntries_GuardList->_buffer = DDS_ConditionSeq_allocbuf(1);
     checkHandle(appendEntries_GuardList->_buffer, "DDS_ConditionSeq_allocbuf");
+
+    appendEntriesReply_GuardList = DDS_ConditionSeq__alloc();
+    checkHandle(appendEntriesReply_GuardList, "DDS_ConditionSeq__alloc");
+    appendEntriesReply_GuardList->_maximum = 1;
+    appendEntriesReply_GuardList->_length = 0;
+    appendEntriesReply_GuardList->_release = TRUE;
+    appendEntriesReply_GuardList->_buffer = DDS_ConditionSeq_allocbuf(1);
+    checkHandle(appendEntriesReply_GuardList->_buffer, "DDS_ConditionSeq_allocbuf");
 
     requestVoteReply_QueryCondition = DDS_DataReader_create_querycondition(
         requestVoteReply_DataReader,
@@ -547,6 +562,9 @@ void createLeaderElectionDDSFeatures(const uint8_t ID) {
 
     g_status = DDS_WaitSet_attach_condition(appendEntries_WaitSet, electionTimer_QueryCondition);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (appendEntries_QueryCondition)");
+
+    g_status = DDS_WaitSet_attach_condition(appendEntriesReply_WaitSet, appendEntriesReply_QueryCondition);
+    checkStatus(g_status, "DDS_WaitSet_attach_condition (appendEntriesReply_QueryCondition)");
 
     DDS_free(query_parameters);
 
