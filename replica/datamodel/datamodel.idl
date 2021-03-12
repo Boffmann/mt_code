@@ -1,4 +1,9 @@
 module RevPiDDS {
+
+  struct Entry {
+    long id;
+  };
+
   struct Input {
     long test;
   };
@@ -7,8 +12,17 @@ module RevPiDDS {
   struct AppendEntries {
     long term;
     long senderID;
+    sequence<Entry> entries;
   };
   #pragma keylist AppendEntries term
+
+  struct AppendEntriesReply {
+    long senderID;
+    long id;
+    long term;
+    long success;
+  };
+  #pragma keylist AppendEntriesReply
 
   struct RequestVote {
     long term;

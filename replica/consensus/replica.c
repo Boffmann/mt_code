@@ -14,6 +14,7 @@ void *runElectionTimer() {
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_ReturnCode_t status;
     uint32_t received_Term = 0;
+    DDS_sequence_RevPiDDS_Entry entries_Seq;
 
     while (true) {
 
@@ -36,8 +37,17 @@ void *runElectionTimer() {
                 for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
                     if (infoSeq._buffer[i].valid_data) {
                         received_Term = msgSeq._buffer[i].term;
+                        entries_Seq = msgSeq._buffer[i].entries;
                         if (received_Term > this_replica->current_term) {
                             become_follower(received_Term);
+                        }
+
+                        if (entries_Seq._length > 0) {
+                            printf("Got some new entries\n");
+                            for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
+                                uint32_t id = entries_Seq._buffer[entry_index].id;
+                                printf("Got the following entry: ID: %d\n", id);
+                            }
                         }
                     }
                 }
@@ -67,17 +77,28 @@ void send_heartbeat(int signum, siginfo_t* info, void* args) {
     (void) args;
 
     DDS_ReturnCode_t status;
-    RevPiDDS_AppendEntries* heartbeat_message;
+    RevPiDDS_AppendEntries* appendEntries_message;
 
-    heartbeat_message = RevPiDDS_AppendEntries__alloc();
-    heartbeat_message->term = this_replica->current_term;
-    heartbeat_message->senderID = this_replica->ID;
+    appendEntries_message = RevPiDDS_AppendEntries__alloc();
+    pthread_mutex_lock(&this_replica->consensus_mutex);
+    appendEntries_message->term = this_replica->current_term;
+    appendEntries_message->senderID = this_replica->ID;
+    uint8_t payload_size = this_replica->log_tail;
+    appendEntries_message->entries._length = payload_size;
+    appendEntries_message->entries._maximum = payload_size;
+    appendEntries_message->entries._buffer = DDS_sequence_RevPiDDS_Entry_allocbuf(payload_size);
+    this_replica->log_tail = 0;
+    for (uint8_t i = 0; i < payload_size; i++) {
+        printf("Appending an entry to appendEntry Message\n");
+        appendEntries_message->entries._buffer[i].id = this_replica->log[i].id;
+    }
+    pthread_mutex_unlock(&this_replica->consensus_mutex);
 
-    printf("About to send heartbeat with term %d\n", heartbeat_message->term);
-    status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, heartbeat_message, DDS_HANDLE_NIL);
-    checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write heartbeat message");
+    printf("About to send heartbeat with term %d\n", appendEntries_message->term);
+    status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
+    checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message");
 
-    DDS_free(heartbeat_message);
+    DDS_free(appendEntries_message);
 }
 
 void become_leader() {
@@ -117,7 +138,6 @@ void become_follower(const uint32_t term) {
 }
 
 void initialize_replica(const uint8_t id) {
-    replica_t *new_replica;
 
     DDSSetupConsensus();
     createLeaderElectionDDSFeatures(id);
@@ -125,36 +145,48 @@ void initialize_replica(const uint8_t id) {
     srand(time(NULL));
     DDS_unsigned_long random_timeout = (rand() % 300000000) + 700000000;
 
-    new_replica = malloc(sizeof(replica_t));
+    this_replica = malloc(sizeof(replica_t));
 
-    new_replica->ID = id;
+    this_replica->ID = id;
 
-    sigemptyset(&new_replica->heartbeat_action.sa_mask);
-    new_replica->heartbeat_action.sa_sigaction = &send_heartbeat;
-    sigaction (SIGALRM, &new_replica->heartbeat_action, NULL);
+    sigemptyset(&this_replica->heartbeat_action.sa_mask);
+    this_replica->heartbeat_action.sa_sigaction = &send_heartbeat;
+    sigaction (SIGALRM, &this_replica->heartbeat_action, NULL);
 
-    new_replica->heartbeat_timer.it_value.tv_sec = 0;
-    new_replica->heartbeat_timer.it_value.tv_usec = 50000;
+    this_replica->heartbeat_timer.it_value.tv_sec = 0;
+    this_replica->heartbeat_timer.it_value.tv_usec = 50000;
 
-    new_replica->heartbeat_timer.it_interval.tv_sec = 0;
-    new_replica->heartbeat_timer.it_interval.tv_usec = 50000;
+    this_replica->heartbeat_timer.it_interval.tv_sec = 0;
+    this_replica->heartbeat_timer.it_interval.tv_usec = 50000;
 
-    new_replica->election_timeout.sec = 0;
-    new_replica->election_timeout.nanosec = random_timeout;
+    this_replica->election_timeout.sec = 0;
+    this_replica->election_timeout.nanosec = random_timeout;
 
-    pthread_mutex_init(&new_replica->consensus_mutex, NULL);
+    this_replica->log_tail = 0;
+    // this_replica->log = malloc(LOG_PUFFER * sizeof(log_entry_t));
 
-    this_replica = new_replica;
+    pthread_mutex_init(&this_replica->consensus_mutex, NULL);
 
     become_follower(0);
 
-    if (pthread_create(&new_replica->election_timer_thread, NULL, runElectionTimer, NULL) != 0) {
+    if (pthread_create(&this_replica->election_timer_thread, NULL, runElectionTimer, NULL) != 0) {
         printf("Error creating election timer thread\n");
         exit (-1);
     }
 
-    pthread_create(&new_replica->request_vote_thread, NULL, receive_vote_requests, NULL);
+    pthread_create(&this_replica->request_vote_thread, NULL, receive_vote_requests, NULL);
 
+}
+
+bool append_to_log(const log_entry_t entry) {
+    if (this_replica->log_tail >= LOG_PUFFER) {
+        return false;
+    }
+
+    this_replica->log[this_replica->log_tail] = entry;
+    this_replica->log_tail++;
+
+    return true;
 }
 
 void teardown_replica() {

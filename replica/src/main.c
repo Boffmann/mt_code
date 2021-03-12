@@ -20,7 +20,6 @@ int main(int argc, char *argv[]) {
     uint8_t replica_ID = (uint8_t)atoi(argv[1]);
 
     DDS_ReturnCode_t status;
-    uint8_t input_index = 0;
     unsigned long i = 0;
     DDS_sequence_RevPiDDS_Input* message_seq = DDS_sequence_RevPiDDS_Input__alloc();
     DDS_SampleInfoSeq* message_infoSeq = DDS_SampleInfoSeq__alloc();
@@ -33,11 +32,15 @@ int main(int argc, char *argv[]) {
     status = DDS_WaitSet_attach_condition(input_WaitSet, input_ReadCondition);
     checkStatus(status, "DDS_WaitSet_attach_condition (input_ReadCondition)");
 
-    status = DDS_WaitSet_wait(input_WaitSet, input_GuardList, &input_Timeout);
+    while (true) {
+        status = DDS_WaitSet_wait(input_WaitSet, input_GuardList, &input_Timeout);
 
-    if (status == DDS_RETCODE_OK) {
-        input_index = 0;
-        do {
+        if (status == DDS_RETCODE_OK) {
+            if (this_replica->role != LEADER) {
+                continue;
+            }
+            pthread_mutex_lock(&this_replica->consensus_mutex);
+
             status = RevPiDDS_InputDataReader_read_w_condition(input_DataReader, message_seq, message_infoSeq, DDS_LENGTH_UNLIMITED, input_ReadCondition);
             checkStatus(status, "RevPiDDS_InputDataReader_read_w_condition");
 
@@ -50,19 +53,19 @@ int main(int argc, char *argv[]) {
                 }
             }
             fflush(stdout);
+            log_entry_t new_entry;
+            new_entry.id = this_replica->log_tail;
+            new_entry.term = this_replica->current_term;
+            append_to_log(new_entry);
+
             status = RevPiDDS_InputDataReader_return_loan(input_DataReader, message_seq, message_infoSeq);
             checkStatus(status, "RevPiDDS_InputDataReader_return_loan");
 
-            // TODO Process data
+            pthread_mutex_unlock(&this_replica->consensus_mutex);
 
-            // TODO if follower publish to replica result
-            // If leader collect and vote
-
-
-        } while ( ++input_index < input_GuardList->_length);
-
-    } else {
-        checkStatus(status, "DDS_WaitSet_wait (Input Waitset)");
+        } else {
+            checkStatus(status, "DDS_WaitSet_wait (Input Waitset)");
+        }
     }
 
     status = DDS_WaitSet_detach_condition(input_WaitSet, input_ReadCondition);

@@ -11,6 +11,7 @@
 
 #define VOTED_NONE 255
 #define ACTIVE_REPLICAS 3
+#define LOG_PUFFER 5
 
 enum {
     WON_ELECTION        = (1 << 0),
@@ -22,6 +23,11 @@ struct CollectVotesParams {
     uint32_t started_term;
     uint8_t votes_received;
 };
+
+typedef struct {
+    uint32_t id;
+    uint32_t term;
+} log_entry_t;
 
 typedef enum {
     FOLLOWER,
@@ -45,6 +51,9 @@ typedef struct {
     struct itimerval heartbeat_timer;
     DDS_Duration_t election_timeout;
 
+    log_entry_t log[LOG_PUFFER];
+    size_t log_tail;
+
 } replica_t;
 
 replica_t* this_replica;
@@ -54,5 +63,7 @@ void teardown_replica();
 
 void become_follower(const uint32_t term);
 void become_leader();
+
+bool append_to_log(const log_entry_t entry);
 
 #endif
