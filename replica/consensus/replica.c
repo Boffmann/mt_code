@@ -15,6 +15,8 @@ void *runElectionTimer() {
     DDS_ReturnCode_t status;
     uint32_t received_Term = 0;
     DDS_sequence_RevPiDDS_Entry entries_Seq;
+    RevPiDDS_AppendEntriesReply* appendEntriesReply_message;
+
 
     while (true) {
 
@@ -42,11 +44,30 @@ void *runElectionTimer() {
                             become_follower(received_Term);
                         }
 
+                        bool success = false;
+
+                        if (received_Term == this_replica->current_term) {
+                            if (this_replica->role != FOLLOWER) {
+                                become_follower(received_Term);
+                            }
+
+                            success = true;
+                        }
                         if (entries_Seq._length > 0) {
                             printf("Got some new entries\n");
                             for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
                                 uint32_t id = entries_Seq._buffer[entry_index].id;
                                 printf("Got the following entry: ID: %d\n", id);
+                                appendEntriesReply_message = RevPiDDS_AppendEntriesReply__alloc();
+                                appendEntriesReply_message->id = id;
+                                appendEntriesReply_message->senderID = this_replica->ID;
+                                appendEntriesReply_message->term = this_replica->current_term;
+                                appendEntriesReply_message->success = success;
+
+                                status = RevPiDDS_AppendEntriesReplyDataWriter_write(appendEntriesReply_DataWriter, appendEntriesReply_message, DDS_HANDLE_NIL);
+                                checkStatus(status, "RevPiDDS_AppendEntriesReplyDataWriter write AppendEntriesReply");
+                                DDS_free(appendEntriesReply_message);
+
                             }
                         }
                     }
@@ -80,19 +101,8 @@ void send_heartbeat(int signum, siginfo_t* info, void* args) {
     RevPiDDS_AppendEntries* appendEntries_message;
 
     appendEntries_message = RevPiDDS_AppendEntries__alloc();
-    pthread_mutex_lock(&this_replica->consensus_mutex);
     appendEntries_message->term = this_replica->current_term;
     appendEntries_message->senderID = this_replica->ID;
-    uint8_t payload_size = this_replica->log_tail;
-    appendEntries_message->entries._length = payload_size;
-    appendEntries_message->entries._maximum = payload_size;
-    appendEntries_message->entries._buffer = DDS_sequence_RevPiDDS_Entry_allocbuf(payload_size);
-    this_replica->log_tail = 0;
-    for (uint8_t i = 0; i < payload_size; i++) {
-        printf("Appending an entry to appendEntry Message\n");
-        appendEntries_message->entries._buffer[i].id = this_replica->log[i].id;
-    }
-    pthread_mutex_unlock(&this_replica->consensus_mutex);
 
     printf("About to send heartbeat with term %d\n", appendEntries_message->term);
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
@@ -162,7 +172,7 @@ void initialize_replica(const uint8_t id) {
     this_replica->election_timeout.sec = 0;
     this_replica->election_timeout.nanosec = random_timeout;
 
-    this_replica->log_tail = 0;
+    // this_replica->log_tail = 0;
     // this_replica->log = malloc(LOG_PUFFER * sizeof(log_entry_t));
 
     pthread_mutex_init(&this_replica->consensus_mutex, NULL);
@@ -178,15 +188,73 @@ void initialize_replica(const uint8_t id) {
 
 }
 
-bool append_to_log(const log_entry_t entry) {
-    if (this_replica->log_tail >= LOG_PUFFER) {
-        return false;
+void cluster_process(const log_entry_t entry, void(*on_result)(const replica_result_t* result, const size_t length), void(*on_fail)(void)) {
+    RevPiDDS_AppendEntries* appendEntries_message;
+    DDS_sequence_RevPiDDS_AppendEntriesReply msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
+    DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
+    DDS_ReturnCode_t status;
+    DDS_Duration_t timeout = {0 , 500000000};
+    uint32_t received_Term = 0;
+    uint32_t reply_ID;
+    uint8_t sender_ID;
+    bool success = false;
+    size_t num_replies = 0;
+    replica_result_t replies[ACTIVE_REPLICAS];
+
+
+    appendEntries_message = RevPiDDS_AppendEntries__alloc();
+    appendEntries_message->senderID = this_replica->ID;
+    appendEntries_message->term = this_replica->current_term;
+    uint8_t payload_size = 1;
+    appendEntries_message->entries._length = payload_size;
+    appendEntries_message->entries._maximum = payload_size;
+    appendEntries_message->entries._buffer = DDS_sequence_RevPiDDS_Entry_allocbuf(payload_size);
+    appendEntries_message->entries._buffer[0].id = entry.id;
+    status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
+    checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message");
+
+    status = DDS_WaitSet_wait(appendEntriesReply_WaitSet, appendEntriesReply_GuardList, &timeout);
+
+    if (status == DDS_RETCODE_OK) {
+        status = RevPiDDS_AppendEntriesReplyDataReader_take(
+            appendEntriesReply_DataReader,
+            &msgSeq,
+            &infoSeq,
+            DDS_LENGTH_UNLIMITED,
+            DDS_NOT_READ_SAMPLE_STATE,
+            DDS_ANY_VIEW_STATE,
+            DDS_ANY_INSTANCE_STATE
+        );
+        checkStatus(status, "RevPiDDS_AppendEntriesReplyDataReader_take");
+
+        if (msgSeq._length > 0) {
+
+            for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
+                if (infoSeq._buffer[i].valid_data) {
+                    received_Term = msgSeq._buffer[i].term;
+                    sender_ID = msgSeq._buffer[i].senderID;
+                    reply_ID = msgSeq._buffer[i].id;
+                    success = msgSeq._buffer[i].success;
+                    printf("Got some new appendEntriesReply Data from %d - ReplyID: %d Term: %d Success: %d\n", sender_ID, reply_ID, received_Term, success);
+                    if (success) {
+                        replica_result_t reply;
+                        reply.replica_id = sender_ID;
+                        replies[num_replies] = reply;
+                        num_replies++;
+                    }
+                }
+            }
+
+            on_result(replies, num_replies);
+        }
+        RevPiDDS_AppendEntriesReplyDataReader_return_loan(appendEntriesReply_DataReader, &msgSeq, &infoSeq);
+
+
+    } else {
+        on_fail();
     }
 
-    this_replica->log[this_replica->log_tail] = entry;
-    this_replica->log_tail++;
-
-    return true;
+    DDS_free(appendEntries_message);
 }
 
 void teardown_replica() {

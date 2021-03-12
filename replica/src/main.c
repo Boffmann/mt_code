@@ -10,6 +10,18 @@
 
 replica_t *this_replica;
 
+void perform_voting(const replica_result_t* results, const size_t length) {
+    printf("Got new voting material\n");
+
+    for (size_t i = 0; i < length; ++i) {
+        printf("Reply from Replica: %d\n", results->replica_id);
+    }
+}
+
+void on_no_results(void) {
+    printf("Failed to deliver!!!!!\n");
+}
+
 int main(int argc, char *argv[]) {
 
     if (argc < 2) {
@@ -54,14 +66,15 @@ int main(int argc, char *argv[]) {
             }
             fflush(stdout);
             log_entry_t new_entry;
-            new_entry.id = this_replica->log_tail;
-            new_entry.term = this_replica->current_term;
-            append_to_log(new_entry);
+            new_entry.id = 42;
+            pthread_mutex_unlock(&this_replica->consensus_mutex);
+
+            cluster_process(new_entry, &perform_voting, &on_no_results);
 
             status = RevPiDDS_InputDataReader_return_loan(input_DataReader, message_seq, message_infoSeq);
             checkStatus(status, "RevPiDDS_InputDataReader_return_loan");
 
-            pthread_mutex_unlock(&this_replica->consensus_mutex);
+
 
         } else {
             checkStatus(status, "DDS_WaitSet_wait (Input Waitset)");

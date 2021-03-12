@@ -29,6 +29,10 @@ typedef struct {
     uint32_t term;
 } log_entry_t;
 
+typedef struct {
+    uint32_t replica_id;
+} replica_result_t;
+
 typedef enum {
     FOLLOWER,
     CANDIDATE,
@@ -51,8 +55,8 @@ typedef struct {
     struct itimerval heartbeat_timer;
     DDS_Duration_t election_timeout;
 
-    log_entry_t log[LOG_PUFFER];
-    size_t log_tail;
+    // log_entry_t log[LOG_PUFFER];
+    // size_t log_tail;
 
 } replica_t;
 
@@ -64,6 +68,6 @@ void teardown_replica();
 void become_follower(const uint32_t term);
 void become_leader();
 
-bool append_to_log(const log_entry_t entry);
+void cluster_process(const log_entry_t entry, void(*on_result)(const replica_result_t* result, const size_t length), void(*on_fail)(void));
 
 #endif
