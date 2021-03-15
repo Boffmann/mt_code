@@ -9,6 +9,8 @@
 
 #include "dds_dcps.h"
 
+#include "datamodel.h"
+
 #define VOTED_NONE 255
 #define ACTIVE_REPLICAS 3
 #define LOG_PUFFER 5
@@ -31,6 +33,7 @@ typedef struct {
 
 typedef struct {
     uint32_t replica_id;
+    uint32_t term;          // The term in which this result was generated
 } replica_result_t;
 
 typedef enum {
@@ -68,6 +71,6 @@ void teardown_replica();
 void become_follower(const uint32_t term);
 void become_leader();
 
-void cluster_process(const log_entry_t entry, void(*on_result)(const replica_result_t* result, const size_t length), void(*on_fail)(void));
+void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* handle, const replica_result_t* result, const size_t length), void(*on_fail)(void));
 
 #endif

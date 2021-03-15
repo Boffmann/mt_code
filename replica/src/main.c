@@ -10,12 +10,32 @@
 
 replica_t *this_replica;
 
-void perform_voting(const replica_result_t* results, const size_t length) {
+void perform_voting(RevPiDDS_Input* input, const replica_result_t* results, const size_t length) {
     printf("Got new voting material\n");
 
-    for (size_t i = 0; i < length; ++i) {
-        printf("Reply from Replica: %d\n", results->replica_id);
+    if (this_replica->role != LEADER) {
+        printf("Got new voting material but not leader anymore\n");
+        return;
     }
+
+    // TODO Can it happen that replica died while processing and come back alive when result was processed by another leader?
+    // Prevent the result from being processed (committed) twice
+    for (size_t i = 0; i < length; ++i) {
+        replica_result_t result = results[i];
+        printf("Reply from Replica: %d\n", result.replica_id);
+
+        if (result.term > this_replica->current_term) {
+            printf("The reply was made by a follower from the future\n");
+            continue;
+        }
+
+        DDS_InstanceHandle_t handle = DDS_Entity_get_instance_handle(input);
+        RevPiDDS_InputDataWriter_dispose(
+            input_DataWriter,
+            input,
+            handle);
+    }
+
 }
 
 void on_no_results(void) {
@@ -38,6 +58,7 @@ int main(int argc, char *argv[]) {
     DDS_Duration_t input_Timeout = DDS_DURATION_INFINITE;
 
     DDSSetup();
+    // uint8_t message = 0;
 
     initialize_replica(replica_ID);
 
@@ -46,37 +67,51 @@ int main(int argc, char *argv[]) {
 
     while (true) {
         status = DDS_WaitSet_wait(input_WaitSet, input_GuardList, &input_Timeout);
-
+        pthread_mutex_lock(&this_replica->consensus_mutex);
+        if (this_replica->role != LEADER) {
+            pthread_mutex_unlock(&this_replica->consensus_mutex);
+            continue;
+        }
+        printf("Input waitSet triggered\n");
         if (status == DDS_RETCODE_OK) {
-            if (this_replica->role != LEADER) {
-                continue;
-            }
-            pthread_mutex_lock(&this_replica->consensus_mutex);
 
-            status = RevPiDDS_InputDataReader_read_w_condition(input_DataReader, message_seq, message_infoSeq, DDS_LENGTH_UNLIMITED, input_ReadCondition);
+            status = RevPiDDS_InputDataReader_read_w_condition(
+                    input_DataReader,
+                    message_seq,
+                    message_infoSeq,
+                    DDS_LENGTH_UNLIMITED,
+                    input_ReadCondition);
             checkStatus(status, "RevPiDDS_InputDataReader_read_w_condition");
 
-            for( i = 0; i < message_seq->_length ; i++ ) {
-                printf("\n    --- New message received ---");
-                if( message_infoSeq->_buffer[i].valid_data == TRUE ) {
-                    printf("\n    Message : \"%d\"", message_seq->_buffer[i].test);
-                } else {
-                    printf("\n    Data is invalid!");
-                }
-            }
-            fflush(stdout);
-            log_entry_t new_entry;
-            new_entry.id = 42;
-            pthread_mutex_unlock(&this_replica->consensus_mutex);
+            if (message_seq->_length > 0) {
+                for( i = 0; i < message_seq->_length ; i++ ) {
+                    printf("\n    --- New message received ---");
+                    if( message_infoSeq->_buffer[i].valid_data == TRUE ) {
+                        printf("\n    Message : \"%d\"\n", message_seq->_buffer[i].test);
+                        // log_entry_t new_entry;
+                        // new_entry.id = message++;
 
-            cluster_process(new_entry, &perform_voting, &on_no_results);
+                        // TODO What happens when there is no leader present in the system?
+                        // Add "commit" functionality to mark Inputs as processed when a decision has been made (in "perform_voting")
+                        pthread_mutex_unlock(&this_replica->consensus_mutex);
+                        cluster_process(&message_seq->_buffer[i], &perform_voting, &on_no_results);
+                        pthread_mutex_lock(&this_replica->consensus_mutex);
+                    } else {
+                        printf("\n    Data is invalid!\n");
+                    }
+                }
+            } else {
+                printf("Got an empty message\n");
+            }
+
+            pthread_mutex_unlock(&this_replica->consensus_mutex);
+            fflush(stdout);
 
             status = RevPiDDS_InputDataReader_return_loan(input_DataReader, message_seq, message_infoSeq);
             checkStatus(status, "RevPiDDS_InputDataReader_return_loan");
 
-
-
         } else {
+            pthread_mutex_unlock(&this_replica->consensus_mutex);
             checkStatus(status, "DDS_WaitSet_wait (Input Waitset)");
         }
     }

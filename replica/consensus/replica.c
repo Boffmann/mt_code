@@ -67,7 +67,6 @@ void *runElectionTimer() {
                                 status = RevPiDDS_AppendEntriesReplyDataWriter_write(appendEntriesReply_DataWriter, appendEntriesReply_message, DDS_HANDLE_NIL);
                                 checkStatus(status, "RevPiDDS_AppendEntriesReplyDataWriter write AppendEntriesReply");
                                 DDS_free(appendEntriesReply_message);
-
                             }
                         }
                     }
@@ -172,9 +171,6 @@ void initialize_replica(const uint8_t id) {
     this_replica->election_timeout.sec = 0;
     this_replica->election_timeout.nanosec = random_timeout;
 
-    // this_replica->log_tail = 0;
-    // this_replica->log = malloc(LOG_PUFFER * sizeof(log_entry_t));
-
     pthread_mutex_init(&this_replica->consensus_mutex, NULL);
 
     become_follower(0);
@@ -188,7 +184,7 @@ void initialize_replica(const uint8_t id) {
 
 }
 
-void cluster_process(const log_entry_t entry, void(*on_result)(const replica_result_t* result, const size_t length), void(*on_fail)(void)) {
+void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* handle, const replica_result_t* result, const size_t length), void(*on_fail)(void)) {
     RevPiDDS_AppendEntries* appendEntries_message;
     DDS_sequence_RevPiDDS_AppendEntriesReply msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
@@ -209,10 +205,12 @@ void cluster_process(const log_entry_t entry, void(*on_result)(const replica_res
     appendEntries_message->entries._length = payload_size;
     appendEntries_message->entries._maximum = payload_size;
     appendEntries_message->entries._buffer = DDS_sequence_RevPiDDS_Entry_allocbuf(payload_size);
-    appendEntries_message->entries._buffer[0].id = entry.id;
+    appendEntries_message->entries._buffer[0].id = handle->test;
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
     checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message");
 
+    // TODO Wait until enough data is ready.
+    // If timeouts, see how many data there is. When arrived data is sufficient, call "on_result", if not call "on_fail"
     status = DDS_WaitSet_wait(appendEntriesReply_WaitSet, appendEntriesReply_GuardList, &timeout);
 
     if (status == DDS_RETCODE_OK) {
@@ -239,13 +237,16 @@ void cluster_process(const log_entry_t entry, void(*on_result)(const replica_res
                     if (success) {
                         replica_result_t reply;
                         reply.replica_id = sender_ID;
+                        reply.term = received_Term;
                         replies[num_replies] = reply;
                         num_replies++;
                     }
                 }
             }
 
-            on_result(replies, num_replies);
+            pthread_mutex_lock(&this_replica->consensus_mutex);
+            on_result(handle, replies, num_replies);
+            pthread_mutex_unlock(&this_replica->consensus_mutex);
         }
         RevPiDDS_AppendEntriesReplyDataReader_return_loan(appendEntriesReply_DataReader, &msgSeq, &infoSeq);
 

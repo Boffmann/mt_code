@@ -12,8 +12,8 @@ DDS_WaitSet input_WaitSet;
 DDS_ReadCondition input_ReadCondition;
 DDS_Subscriber input_Subscriber, replicaResult_Subscriber;
 DDS_DataReader input_DataReader, replicaResult_DataReader;
-DDS_Publisher replicaResult_Publisher;
-DDS_DataWriter replicaResult_DataWriter;
+DDS_Publisher input_Publisher, replicaResult_Publisher;
+DDS_DataWriter input_DataWriter, replicaResult_DataWriter;
 DDS_ConditionSeq *input_GuardList;
 // struct DDS_DataReaderListener *appendEntries_Listener, *requestVote_Listener, *requestVoteReply_Listener, *replicaResult_Listener;
 
