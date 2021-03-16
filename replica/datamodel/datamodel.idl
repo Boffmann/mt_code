@@ -5,9 +5,9 @@ module RevPiDDS {
   };
 
   struct Input {
-    long test;
+    long id;
   };
-  #pragma keylist Input test
+  #pragma keylist Input id
   
   struct AppendEntries {
     long term;

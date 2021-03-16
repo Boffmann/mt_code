@@ -152,7 +152,8 @@ void initialize_replica(const uint8_t id) {
     createLeaderElectionDDSFeatures(id);
 
     srand(time(NULL));
-    DDS_unsigned_long random_timeout = (rand() % 300000000) + 700000000;
+    // DDS_unsigned_long random_timeout = (rand() % 300000000) + 700000000;
+    DDS_unsigned_long id_dependent_timeout = 700000000 + (id * 100000000);
 
     this_replica = malloc(sizeof(replica_t));
 
@@ -169,7 +170,7 @@ void initialize_replica(const uint8_t id) {
     this_replica->heartbeat_timer.it_interval.tv_usec = 50000;
 
     this_replica->election_timeout.sec = 0;
-    this_replica->election_timeout.nanosec = random_timeout;
+    this_replica->election_timeout.nanosec = id_dependent_timeout;
 
     pthread_mutex_init(&this_replica->consensus_mutex, NULL);
 
@@ -189,13 +190,17 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
     DDS_sequence_RevPiDDS_AppendEntriesReply msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_ReturnCode_t status;
-    DDS_Duration_t timeout = {0 , 500000000};
     uint32_t received_Term = 0;
     uint32_t reply_ID;
     uint8_t sender_ID;
     bool success = false;
-    size_t num_replies = 0;
+    uint8_t num_replies = 0;
+    uint8_t num_timeouts = 0;
     replica_result_t replies[ACTIVE_REPLICAS];
+    // Minimal number of available results to get a majority in the cluster
+    uint8_t min_required_results = (uint8_t)(floor((double) ACTIVE_REPLICAS / 2.0)) + 1;
+    DDS_Duration_t timeout = {0 , (long)500000000 / min_required_results};
+    uint32_t input_ID = handle->id;
 
 
     appendEntries_message = RevPiDDS_AppendEntries__alloc();
@@ -205,52 +210,69 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
     appendEntries_message->entries._length = payload_size;
     appendEntries_message->entries._maximum = payload_size;
     appendEntries_message->entries._buffer = DDS_sequence_RevPiDDS_Entry_allocbuf(payload_size);
-    appendEntries_message->entries._buffer[0].id = handle->test;
+    appendEntries_message->entries._buffer[0].id = handle->id;
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
     checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message");
 
+    replica_result_t reply;
+    reply.replica_id = this_replica->ID;
+    reply.term = this_replica->current_term;
+    replies[num_replies] = reply;
+    num_replies++;
+
     // TODO Wait until enough data is ready.
     // If timeouts, see how many data there is. When arrived data is sufficient, call "on_result", if not call "on_fail"
-    status = DDS_WaitSet_wait(appendEntriesReply_WaitSet, appendEntriesReply_GuardList, &timeout);
 
-    if (status == DDS_RETCODE_OK) {
-        status = RevPiDDS_AppendEntriesReplyDataReader_take(
-            appendEntriesReply_DataReader,
-            &msgSeq,
-            &infoSeq,
-            DDS_LENGTH_UNLIMITED,
-            DDS_NOT_READ_SAMPLE_STATE,
-            DDS_ANY_VIEW_STATE,
-            DDS_ANY_INSTANCE_STATE
-        );
-        checkStatus(status, "RevPiDDS_AppendEntriesReplyDataReader_take");
+    while (true) {
+        status = DDS_WaitSet_wait(appendEntriesReply_WaitSet, appendEntriesReply_GuardList, &timeout);
+        printf("Waitset collect results triggered\n");
 
-        if (msgSeq._length > 0) {
+        if (status == DDS_RETCODE_OK) {
+            status = RevPiDDS_AppendEntriesReplyDataReader_take(
+                appendEntriesReply_DataReader,
+                &msgSeq,
+                &infoSeq,
+                DDS_LENGTH_UNLIMITED,
+                DDS_NOT_READ_SAMPLE_STATE,
+                DDS_ANY_VIEW_STATE,
+                DDS_ANY_INSTANCE_STATE
+            );
+            checkStatus(status, "RevPiDDS_AppendEntriesReplyDataReader_take");
 
-            for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
-                if (infoSeq._buffer[i].valid_data) {
-                    received_Term = msgSeq._buffer[i].term;
-                    sender_ID = msgSeq._buffer[i].senderID;
-                    reply_ID = msgSeq._buffer[i].id;
-                    success = msgSeq._buffer[i].success;
-                    printf("Got some new appendEntriesReply Data from %d - ReplyID: %d Term: %d Success: %d\n", sender_ID, reply_ID, received_Term, success);
-                    if (success) {
-                        replica_result_t reply;
-                        reply.replica_id = sender_ID;
-                        reply.term = received_Term;
-                        replies[num_replies] = reply;
-                        num_replies++;
+            if (msgSeq._length > 0) {
+
+                for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
+                    if (infoSeq._buffer[i].valid_data) {
+                        received_Term = msgSeq._buffer[i].term;
+                        sender_ID = msgSeq._buffer[i].senderID;
+                        reply_ID = msgSeq._buffer[i].id;
+                        success = msgSeq._buffer[i].success;
+                        printf("Got some new appendEntriesReply Data from %d - ReplyID: %d Term: %d Success: %d\n", sender_ID, reply_ID, received_Term, success);
+                        if (success && reply_ID == input_ID) {
+                            replica_result_t reply;
+                            reply.replica_id = sender_ID;
+                            reply.term = received_Term;
+                            replies[num_replies] = reply;
+                            num_replies++;
+                        }
                     }
                 }
+
             }
+            RevPiDDS_AppendEntriesReplyDataReader_return_loan(appendEntriesReply_DataReader, &msgSeq, &infoSeq);
 
-            pthread_mutex_lock(&this_replica->consensus_mutex);
-            on_result(handle, replies, num_replies);
-            pthread_mutex_unlock(&this_replica->consensus_mutex);
+        } else {
+            num_timeouts++;
+            if (num_timeouts + num_replies > min_required_results) {
+                break;
+            }
         }
-        RevPiDDS_AppendEntriesReplyDataReader_return_loan(appendEntriesReply_DataReader, &msgSeq, &infoSeq);
+    }
 
-
+    if (num_replies >= min_required_results) {
+        pthread_mutex_lock(&this_replica->consensus_mutex);
+        on_result(handle, replies, num_replies);
+        pthread_mutex_unlock(&this_replica->consensus_mutex);
     } else {
         on_fail();
     }

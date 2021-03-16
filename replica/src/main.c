@@ -87,12 +87,8 @@ int main(int argc, char *argv[]) {
                 for( i = 0; i < message_seq->_length ; i++ ) {
                     printf("\n    --- New message received ---");
                     if( message_infoSeq->_buffer[i].valid_data == TRUE ) {
-                        printf("\n    Message : \"%d\"\n", message_seq->_buffer[i].test);
-                        // log_entry_t new_entry;
-                        // new_entry.id = message++;
+                        printf("\n    Message : \"%d\"\n", message_seq->_buffer[i].id);
 
-                        // TODO What happens when there is no leader present in the system?
-                        // Add "commit" functionality to mark Inputs as processed when a decision has been made (in "perform_voting")
                         pthread_mutex_unlock(&this_replica->consensus_mutex);
                         cluster_process(&message_seq->_buffer[i], &perform_voting, &on_no_results);
                         pthread_mutex_lock(&this_replica->consensus_mutex);
