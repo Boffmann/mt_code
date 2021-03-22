@@ -44,4 +44,10 @@ module RevPiDDS {
   };
   #pragma keylist ReplicaResult
 
+  struct ActivateSpare {
+    long term;
+    long activate;
+  };
+  #pragma keylist ActivateSpare
+
 };

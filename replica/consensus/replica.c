@@ -8,6 +8,74 @@
 #include "DIO/DIO.h"
 #include "leaderElection.h"
 
+bool activate_when_promted() {
+    DDS_sequence_RevPiDDS_ActivateSpare msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
+    DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
+    int received_Term = this_replica->current_term;
+    bool should_activate = false;
+    DDS_ReturnCode_t status;
+
+    printf("Reading from ActivateSpareTopic\n");
+    status = RevPiDDS_ActivateSpareDataReader_take_w_condition(
+        activateSpare_DataReader,
+        &msgSeq,
+        &infoSeq,
+        DDS_LENGTH_UNLIMITED,
+        activateSpare_ReadCondition
+    );
+    checkStatus(status, "RevPiDDS_ActivateSpareDataReader_take");
+
+    if (msgSeq._length > 0) {
+
+        for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
+            if (infoSeq._buffer[i].valid_data) {
+                if (msgSeq._buffer[i].term >= received_Term) {
+                    received_Term = msgSeq._buffer[i].term;
+                    should_activate = msgSeq._buffer[i].activate;
+                }
+            }
+        }
+    } else {
+        printf("Got nothing new on activateSpare Topic\n");
+        return this_replica->role == FOLLOWER;
+    }
+
+    printf("Should activate: %d in term %d\n", should_activate, received_Term);
+    if (should_activate) {
+        become_follower(received_Term);
+        return true;
+    } else {
+        become_spare();
+        return false;
+    }
+}
+
+bool spare_wait_until_activated() {
+
+    if (this_replica->role != SPARE) {
+        printf("This replica is no spare. Would make no sense to wait until activated\n");
+        return true;
+    }
+
+    DDS_ReturnCode_t status;
+    DDS_Duration_t timeout = DDS_DURATION_INFINITE;
+
+    printf("Wait until activate event gets published to activateSpare topic\n");
+    status = DDS_WaitSet_wait(activateSpare_WaitSet, activateSpare_GuardList, &timeout);
+
+    if (this_replica->role != SPARE) {
+        printf("This replica is no spare anymore. Would make no sense to wait until activated\n");
+        return true;
+    }
+
+    if (status != DDS_RETCODE_TIMEOUT) {
+        return activate_when_promted();
+    }
+    
+    // Unreachable
+    return false;
+}
+
 void *runElectionTimer() {
 
     DDS_sequence_RevPiDDS_AppendEntries msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
@@ -20,22 +88,37 @@ void *runElectionTimer() {
 
     while (true) {
 
+        if (this_replica->role == SPARE) {
+            printf("Wait until activated\n");
+            bool is_active = spare_wait_until_activated();
+
+            if (!is_active) {
+                printf("Continued\n");
+                continue;
+            }
+        }
+
         status = DDS_WaitSet_wait(appendEntries_WaitSet, appendEntries_GuardList, &this_replica->election_timeout);
 
         pthread_mutex_lock(&this_replica->consensus_mutex);
 
-        if (status != DDS_RETCODE_TIMEOUT) {
-            status = RevPiDDS_AppendEntriesDataReader_read(
+
+        if (status == DDS_RETCODE_OK) {
+            status = RevPiDDS_AppendEntriesDataReader_take_w_condition(
                 appendEntries_DataReader,
                 &msgSeq,
                 &infoSeq,
                 DDS_LENGTH_UNLIMITED,
-                DDS_NOT_READ_SAMPLE_STATE,
-                DDS_ANY_VIEW_STATE,
-                DDS_ALIVE_INSTANCE_STATE
+                electionTimer_QueryCondition
             );
-            checkStatus(status, "RevPiDDS_AppendEntriesDataReader_read (election Timer)");
+            checkStatus(status, "RevPiDDS_AppendEntriesDataReader_take (election Timer)");
+            if (this_replica->role == SPARE) {
+                pthread_mutex_unlock(&this_replica->consensus_mutex);
+                printf("Continue because of being spare\n");
+                continue;
+            }
             if (msgSeq._length > 0) {
+
                 for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
                     if (infoSeq._buffer[i].valid_data) {
                         received_Term = msgSeq._buffer[i].term;
@@ -55,6 +138,12 @@ void *runElectionTimer() {
                         }
                         if (entries_Seq._length > 0) {
                             printf("Got some new entries\n");
+                            if (this_replica->ID >= ACTIVE_REPLICAS) {
+                                bool is_active = activate_when_promted();
+                                if (!is_active) {
+                                    break;
+                                }
+                            }
                             for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
                                 uint32_t id = entries_Seq._buffer[entry_index].id;
                                 printf("Got the following entry: ID: %d\n", id);
@@ -71,12 +160,19 @@ void *runElectionTimer() {
                         }
                     }
                 }
+                printf("Election Timer received with term %d\n", this_replica->current_term);
+            } else {
+                printf("Waitset election timer triggered again but DR is completely empty\n");
             }
 
-            printf("Election Timer received with term %d\n", this_replica->current_term);
             pthread_mutex_unlock(&this_replica->consensus_mutex);
             RevPiDDS_AppendEntriesDataReader_return_loan(appendEntries_DataReader, &msgSeq, &infoSeq);
-        } else {
+        } else if (status == DDS_RETCODE_TIMEOUT) {
+            if (this_replica->role == SPARE || this_replica->ID >= ACTIVE_REPLICAS) {
+                printf("Election Timer timeouted but this is a spare unit\n");
+                pthread_mutex_unlock(&this_replica->consensus_mutex);
+                continue;
+            }
             if (this_replica->role != FOLLOWER && this_replica->role != CANDIDATE) {
                 printf("Election Timer timeouted but I'm leader\n");
                 pthread_mutex_unlock(&this_replica->consensus_mutex);
@@ -84,12 +180,15 @@ void *runElectionTimer() {
             }
             printf("No leader present in the system\n");
             run_leader_election();
+        } else {
+            checkStatus(status, "DDS_WaitSet_wait election Timer");
         }
 
     }
 
     pthread_exit(NULL);
 }
+
 
 void send_heartbeat(int signum, siginfo_t* info, void* args) {
     (void) signum;
@@ -146,14 +245,31 @@ void become_follower(const uint32_t term) {
 
 }
 
-void initialize_replica(const uint8_t id) {
+void become_spare() {
+    printf("Becoming a spare unit\n");
+    this_replica->role = SPARE;
+
+    if (setitimer(ITIMER_REAL, NULL, NULL) == -1) {
+        perror("Error calling setitimer()");
+        return;
+    }
+}
+
+void initialize_replica(const uint8_t id, const bool is_spare) {
 
     DDSSetupConsensus();
     createLeaderElectionDDSFeatures(id);
 
     srand(time(NULL));
-    // DDS_unsigned_long random_timeout = (rand() % 300000000) + 700000000;
-    DDS_unsigned_long id_dependent_timeout = 700000000 + (id * 100000000);
+    DDS_unsigned_long id_dependent_timeout_sec = 0;
+    DDS_unsigned_long id_dependent_timeout_nanosec = 700000000 + (id * 100000000);
+
+    if (id_dependent_timeout_nanosec >= 1000000000) {
+        id_dependent_timeout_sec = id_dependent_timeout_nanosec / 1000000000;
+        id_dependent_timeout_nanosec = id_dependent_timeout_nanosec % 1000000000;
+    }
+
+    printf("Nanosec: %d Sec: %d", id_dependent_timeout_nanosec, id_dependent_timeout_sec);
 
     this_replica = malloc(sizeof(replica_t));
 
@@ -169,12 +285,17 @@ void initialize_replica(const uint8_t id) {
     this_replica->heartbeat_timer.it_interval.tv_sec = 0;
     this_replica->heartbeat_timer.it_interval.tv_usec = 50000;
 
-    this_replica->election_timeout.sec = 0;
-    this_replica->election_timeout.nanosec = id_dependent_timeout;
+    this_replica->election_timeout.sec = id_dependent_timeout_sec;
+    this_replica->election_timeout.nanosec = id_dependent_timeout_nanosec;
 
     pthread_mutex_init(&this_replica->consensus_mutex, NULL);
 
-    become_follower(0);
+    if (!is_spare) {
+        become_follower(0);
+    } else {
+        printf("Replica is a spare unit\n");
+        become_spare();
+    }
 
     if (pthread_create(&this_replica->election_timer_thread, NULL, runElectionTimer, NULL) != 0) {
         printf("Error creating election timer thread\n");
@@ -196,7 +317,7 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
     bool success = false;
     uint8_t num_replies = 0;
     uint8_t num_timeouts = 0;
-    replica_result_t replies[ACTIVE_REPLICAS];
+    replica_result_t replies[ACTIVE_REPLICAS + NUM_SPARES];
     // Minimal number of available results to get a majority in the cluster
     uint8_t min_required_results = (uint8_t)(floor((double) ACTIVE_REPLICAS / 2.0)) + 1;
     DDS_Duration_t timeout = {0 , (long)500000000 / min_required_results};
@@ -228,14 +349,12 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
         printf("Waitset collect results triggered\n");
 
         if (status == DDS_RETCODE_OK) {
-            status = RevPiDDS_AppendEntriesReplyDataReader_take(
+            status = RevPiDDS_AppendEntriesReplyDataReader_take_w_condition(
                 appendEntriesReply_DataReader,
                 &msgSeq,
                 &infoSeq,
                 DDS_LENGTH_UNLIMITED,
-                DDS_NOT_READ_SAMPLE_STATE,
-                DDS_ANY_VIEW_STATE,
-                DDS_ANY_INSTANCE_STATE
+                appendEntriesReply_QueryCondition
             );
             checkStatus(status, "RevPiDDS_AppendEntriesReplyDataReader_take");
 
@@ -270,6 +389,19 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
     }
 
     if (num_replies >= min_required_results) {
+
+        if (num_replies != ACTIVE_REPLICAS) {
+            bool activate_spare = num_replies < ACTIVE_REPLICAS;
+
+            printf("Activating spare: %d\n", activate_spare);
+
+            RevPiDDS_ActivateSpare *activateSpare_message = RevPiDDS_ActivateSpare__alloc();
+            activateSpare_message->term = this_replica->current_term;
+            activateSpare_message->activate = activate_spare;
+            status = RevPiDDS_ActivateSpareDataWriter_write(activateSpare_DataWriter, activateSpare_message, DDS_HANDLE_NIL);
+            checkStatus(status, "RevPiDDS_ActivateSpareDataWriter_write activateSpare!");
+        }
+
         pthread_mutex_lock(&this_replica->consensus_mutex);
         on_result(handle, replies, num_replies);
         pthread_mutex_unlock(&this_replica->consensus_mutex);

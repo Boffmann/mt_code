@@ -57,15 +57,17 @@ void run_leader_election() {
             do {
                 if (leaderElection_GuardList->_buffer[condition_index] == electionTimer_QueryCondition) {
                     printf("Received an election timer\n");
-                    status = RevPiDDS_AppendEntriesDataReader_take(
+                    status = RevPiDDS_AppendEntriesDataReader_take_w_condition(
                         appendEntries_DataReader,
                         &msgSeq,
                         &infoSeq,
                         DDS_LENGTH_UNLIMITED,
-                        DDS_NOT_READ_SAMPLE_STATE,
-                        DDS_ANY_VIEW_STATE,
-                        DDS_ALIVE_INSTANCE_STATE
+                        electionTimer_QueryCondition
                     );
+                    if (this_replica->role == SPARE) {
+                        printf("Ohoh!! This should never have happened. Spare tries to become a leader!!");
+                        return;
+                    }
                     checkStatus(status, "RevPiDDS_AppendEntriesDataReader_read (election Timer)");
                     if (msgSeq._length > 0) {
                         pthread_mutex_lock(&this_replica->consensus_mutex);
@@ -116,17 +118,19 @@ void handle_vote_message() {
     RevPiDDS_RequestVoteReply* requestVoteReplyMessage;
     bool voteGranted = false;
 
-    status = RevPiDDS_RequestVoteDataReader_take(
+    status = RevPiDDS_RequestVoteDataReader_take_w_condition(
         requestVote_DataReader,
         &msgSeq,
         &infoSeq,
         DDS_LENGTH_UNLIMITED,
-        DDS_NOT_READ_SAMPLE_STATE,
-        DDS_ANY_VIEW_STATE,
-        DDS_ANY_INSTANCE_STATE
+        requestVote_QueryCondition
     );
     checkStatus(status, "RevPiDDS_RequestVoteDataReader_take");
 
+    // A spare unit is not allowed to participate in the voting process
+    if (this_replica->role == SPARE) {
+        return;
+    }
     if (msgSeq._length > 0) {
         for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
             if (infoSeq._buffer[i].valid_data) {
@@ -137,7 +141,12 @@ void handle_vote_message() {
                 printf("Got some new requestVote Data from %d - voteTerm: %d candidate: %d my term: %d \n", voteCandidate, voteTerm, voteCandidate, this_replica->current_term);
 
                 if (voteTerm > this_replica->current_term) {
-                    become_follower(voteTerm);
+                    if (this_replica->ID >= ACTIVE_REPLICAS) {
+                        this_replica->current_term = voteTerm;
+                        this_replica->voted_for = VOTED_NONE;
+                    } else {
+                        become_follower(voteTerm);
+                    }
                 }
 
                 if (voteTerm == this_replica->current_term &&
@@ -181,21 +190,21 @@ void handle_vote_reply_message() {
     uint8_t sender_ID;
     bool voteGranted = false;
 
-    // TODO Waitset with read  event
-
-    printf("Got a vote reply\n");
-
-    status = RevPiDDS_RequestVoteReplyDataReader_take(
+    // TODO Read with condition
+    status = RevPiDDS_RequestVoteReplyDataReader_take_w_condition(
         requestVoteReply_DataReader,
         &msgSeq,
         &infoSeq,
         DDS_LENGTH_UNLIMITED,
-        DDS_NOT_READ_SAMPLE_STATE,
-        DDS_ANY_VIEW_STATE,
-        DDS_ANY_INSTANCE_STATE
+        requestVoteReply_QueryCondition
     );
-
     checkStatus(status, "RevPiDDS_RequestVoteReplyDataReader_take");
+
+    // A spare is not allowed to become a leader and therefore never in Candidate state
+    if (this_replica->role == SPARE) {
+        return;
+    }
+    printf("Got a vote reply\n");
     if (msgSeq._length > 0) {
 
         for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {

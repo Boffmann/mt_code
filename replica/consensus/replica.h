@@ -13,6 +13,7 @@
 
 #define VOTED_NONE 255
 #define ACTIVE_REPLICAS 3
+#define NUM_SPARES 1
 #define LOG_PUFFER 5
 
 enum {
@@ -39,7 +40,8 @@ typedef struct {
 typedef enum {
     FOLLOWER,
     CANDIDATE,
-    LEADER
+    LEADER,
+    SPARE
 } RaftRole;
 
 typedef struct {
@@ -65,10 +67,11 @@ typedef struct {
 
 replica_t* this_replica;
 
-void initialize_replica(const uint8_t id);
+void initialize_replica(const uint8_t id, const bool is_spare);
 void teardown_replica();
 
 void become_follower(const uint32_t term);
+void become_spare();
 void become_leader();
 
 void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* handle, const replica_result_t* result, const size_t length), void(*on_fail)(void));

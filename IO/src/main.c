@@ -1,4 +1,6 @@
 #include <stdbool.h>
+#include <sys/time.h>
+#include <stdlib.h>
 
 #include "dds_dcps.h"
 #include "CheckStatus.h"
@@ -11,6 +13,7 @@ DDS_Publisher input_Publisher;
 DDS_DataWriter input_DataWriter;
 
 const char* partitionName = DDS_OBJECT_NIL;
+
 
 void createInputTopic() {
     char* typeName = DDS_OBJECT_NIL;
@@ -35,7 +38,7 @@ void createInputTopic() {
     checkStatus(status, "DDS_DomainParticipant_get_default_topic_qos");
 
     topicQos->destination_order.kind = DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
-    topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
+    topicQos->durability.kind = DDS_PERSISTENT_DURABILITY_QOS;
     topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     topicQos->history.depth = 5;
     /* topicQos->lifespan.duration = (DDS_Duration_t){1, 0}; */
@@ -94,6 +97,7 @@ void setupDDS() {
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
+    srand(time(NULL));
 
     DDS_InstanceHandle_t test_instance;
     RevPiDDS_Input* inputMessage = DDS_OBJECT_NIL;
@@ -105,7 +109,7 @@ int main(int argc, char *argv[]) {
     test_instance = RevPiDDS_InputDataWriter_register_instance(input_DataWriter, inputMessage);
 
     inputMessage = RevPiDDS_Input__alloc();
-    inputMessage->test = 42;
+    inputMessage->test = rand() % 1000;
     status = RevPiDDS_InputDataWriter_write(input_DataWriter, inputMessage, test_instance);
     checkStatus(status, "RevPiDDS_InputDataWriter_write");
 

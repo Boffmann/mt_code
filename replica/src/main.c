@@ -11,6 +11,9 @@
 replica_t *this_replica;
 
 void perform_voting(RevPiDDS_Input* input, const replica_result_t* results, const size_t length) {
+
+    DDS_ReturnCode_t status;
+
     printf("Got new voting material\n");
 
     if (this_replica->role != LEADER) {
@@ -30,10 +33,11 @@ void perform_voting(RevPiDDS_Input* input, const replica_result_t* results, cons
         }
 
         DDS_InstanceHandle_t handle = DDS_Entity_get_instance_handle(input);
-        RevPiDDS_InputDataWriter_dispose(
+        status = RevPiDDS_InputDataWriter_dispose(
             input_DataWriter,
             input,
             handle);
+        checkStatus(status, "Input_DataWriter Dispose input");
     }
 
 }
@@ -50,6 +54,11 @@ int main(int argc, char *argv[]) {
     }
 
     uint8_t replica_ID = (uint8_t)atoi(argv[1]);
+    bool is_spare = false;
+
+    if (replica_ID >= ACTIVE_REPLICAS) {
+        is_spare = true;
+    }
 
     DDS_ReturnCode_t status;
     unsigned long i = 0;
@@ -60,7 +69,7 @@ int main(int argc, char *argv[]) {
     DDSSetup();
     // uint8_t message = 0;
 
-    initialize_replica(replica_ID);
+    initialize_replica(replica_ID, is_spare);
 
     status = DDS_WaitSet_attach_condition(input_WaitSet, input_ReadCondition);
     checkStatus(status, "DDS_WaitSet_attach_condition (input_ReadCondition)");
