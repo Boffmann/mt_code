@@ -35,6 +35,7 @@ set(sources
   ${source_path}/DDSConsensusManager.c
   ${source_path}/leaderElection.c
   ${source_path}/replica.c
+  ${source_path}/spare.c
 )
 
 #

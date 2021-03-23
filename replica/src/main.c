@@ -54,11 +54,6 @@ int main(int argc, char *argv[]) {
     }
 
     uint8_t replica_ID = (uint8_t)atoi(argv[1]);
-    bool is_spare = false;
-
-    if (replica_ID >= ACTIVE_REPLICAS) {
-        is_spare = true;
-    }
 
     DDS_ReturnCode_t status;
     unsigned long i = 0;
@@ -69,7 +64,7 @@ int main(int argc, char *argv[]) {
     DDSSetup();
     // uint8_t message = 0;
 
-    initialize_replica(replica_ID, is_spare);
+    initialize_replica(replica_ID);
 
     status = DDS_WaitSet_attach_condition(input_WaitSet, input_ReadCondition);
     checkStatus(status, "DDS_WaitSet_attach_condition (input_ReadCondition)");
