@@ -9,6 +9,8 @@
 #include "leaderElection.h"
 #include "spare.h"
 
+#include "evaluation/evaluator.h"
+
 
 void *runElectionTimer() {
 
@@ -112,7 +114,11 @@ void *runElectionTimer() {
                 pthread_mutex_unlock(&this_replica->consensus_mutex);
                 continue;
             }
+#if MEASURE_NUM_ELECTION_TIMEOUTS
+            evaluator_registered_election_timeout(this_replica->ID, this_replica->current_term);
+#endif
             printf("No leader present in the system\n");
+            evaluator_leader_election_started();
             run_leader_election();
         } else {
             checkStatus(status, "DDS_WaitSet_wait election Timer");
@@ -214,10 +220,10 @@ void initialize_replica(const uint8_t id) {
     sigaction (SIGALRM, &this_replica->heartbeat_action, NULL);
 
     this_replica->heartbeat_timer.it_value.tv_sec = 0;
-    this_replica->heartbeat_timer.it_value.tv_usec = 50000;
+    this_replica->heartbeat_timer.it_value.tv_usec = 500000;
 
     this_replica->heartbeat_timer.it_interval.tv_sec = 0;
-    this_replica->heartbeat_timer.it_interval.tv_usec = 50000;
+    this_replica->heartbeat_timer.it_interval.tv_usec = 500000;
 
     this_replica->election_timeout.sec = id_dependent_timeout_sec;
     this_replica->election_timeout.nanosec = id_dependent_timeout_nanosec;

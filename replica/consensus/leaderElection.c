@@ -6,6 +6,8 @@
 
 #include "replica.h"
 
+#include "evaluation/evaluator.h"
+
 uint8_t votes_received = 0;
 
 void run_leader_election() {
@@ -15,7 +17,6 @@ void run_leader_election() {
     unsigned long condition_index = 0;
     DDS_sequence_RevPiDDS_AppendEntries msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
-    // DDS_Duration_t election_Timeout = {4 * this_replica->ID + 4 , 0};
     DDS_Duration_t election_Timeout = {2 , 0};
     uint32_t received_Term = 0;
     bool election_finished = false;
@@ -236,6 +237,7 @@ void handle_vote_reply_message() {
                         printf("Got enough votes. I am the new leader.\n");
                         RevPiDDS_RequestVoteReplyDataReader_return_loan(requestVoteReply_DataReader, &msgSeq, &infoSeq);
                         become_leader(this_replica);
+                        evaluator_got_new_leader(this_replica->ID, this_replica->current_term);
                         break;
                     }
                 }

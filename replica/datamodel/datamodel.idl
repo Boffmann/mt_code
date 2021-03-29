@@ -20,7 +20,7 @@ module RevPiDDS {
     long senderID;
     long id;
     long term;
-    long success;
+    boolean success;
   };
   #pragma keylist AppendEntriesReply
 
@@ -34,7 +34,7 @@ module RevPiDDS {
     long senderID;
     long term;
     long candidateID;
-    long voteGranted;
+    boolean voteGranted;
   };
   #pragma keylist RequestVoteReply
 
@@ -46,7 +46,7 @@ module RevPiDDS {
 
   struct ActivateSpare {
     long term;
-    long activate;
+    boolean activate;
   };
   #pragma keylist ActivateSpare
 

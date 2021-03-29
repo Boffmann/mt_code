@@ -67,4 +67,5 @@ target_link_libraries(${target}
   ${datamodel_lib}
   ${DDSCreator_lib}
   ${consensus_lib}
+  "evaluator"
 )

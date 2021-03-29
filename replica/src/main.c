@@ -7,6 +7,7 @@
 #include "DDSCreator/CheckStatus.h"
 #include "DDSEntitiesManager.h"
 #include "datamodel.h"
+#include "evaluation/evaluator.h"
 
 replica_t *this_replica;
 
@@ -52,6 +53,8 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s [replicaID]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+
+    initialize_evaluator();
 
     uint8_t replica_ID = (uint8_t)atoi(argv[1]);
 
