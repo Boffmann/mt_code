@@ -19,6 +19,7 @@ void run_leader_election() {
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_Duration_t election_Timeout = {2 , 0};
     uint32_t received_Term = 0;
+    uint8_t sender_ID;
     bool election_finished = false;
 
     while (!election_finished) {
@@ -56,25 +57,32 @@ void run_leader_election() {
             printf("Ok. Got a valid event in leader election waitset\n");
             // Check what exactly happened
             do {
-                if (leaderElection_GuardList->_buffer[condition_index] == electionTimer_QueryCondition) {
+                if (leaderElection_GuardList->_buffer[condition_index] == electionTimer_ReadCondition) {
                     printf("Received an election timer\n");
                     status = RevPiDDS_AppendEntriesDataReader_take_w_condition(
                         appendEntries_DataReader,
                         &msgSeq,
                         &infoSeq,
                         DDS_LENGTH_UNLIMITED,
-                        electionTimer_QueryCondition
+                        electionTimer_ReadCondition
                     );
-                    if (this_replica->role == SPARE) {
-                        printf("Ohoh!! This should never have happened. Spare tries to become a leader!!");
-                        return;
-                    }
                     checkStatus(status, "RevPiDDS_AppendEntriesDataReader_read (election Timer)");
                     if (msgSeq._length > 0) {
                         pthread_mutex_lock(&this_replica->consensus_mutex);
                         for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
                             if (infoSeq._buffer[i].valid_data) {
                                 received_Term = msgSeq._buffer[i].term;
+                                sender_ID = msgSeq._buffer[i].senderID;
+
+                                if (sender_ID == this_replica->ID) {
+                                    election_finished = true;
+                                    break;
+                                }
+
+                                if (this_replica->role == SPARE) {
+                                    printf("Ohoh!! This should never have happened. Spare tries to become a leader!!");
+                                    return;
+                                }
                                 if (received_Term > this_replica->current_term) {
                                     printf("I am becoming a follower\n");
                                     become_follower(received_Term);
@@ -116,6 +124,7 @@ void handle_vote_message() {
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     uint32_t voteTerm = 0;
     uint8_t voteCandidate = 0;
+    uint8_t sender_ID;
     RevPiDDS_RequestVoteReply* requestVoteReplyMessage;
     bool voteGranted = false;
 
@@ -124,7 +133,7 @@ void handle_vote_message() {
         &msgSeq,
         &infoSeq,
         DDS_LENGTH_UNLIMITED,
-        requestVote_QueryCondition
+        requestVote_ReadCondition
     );
     checkStatus(status, "RevPiDDS_RequestVoteDataReader_take");
 
@@ -137,6 +146,12 @@ void handle_vote_message() {
             if (infoSeq._buffer[i].valid_data) {
                 voteTerm = msgSeq._buffer[i].term;
                 voteCandidate = msgSeq._buffer[i].senderID;
+                sender_ID = msgSeq._buffer[i].senderID;
+
+                if (sender_ID == this_replica->ID) {
+                    continue;
+                }
+
                 printf("Got this: voteTerm: %d candidate: %d\n", voteTerm, voteCandidate);
 
                 printf("Got some new requestVote Data from %d - voteTerm: %d candidate: %d my term: %d \n", voteCandidate, voteTerm, voteCandidate, this_replica->current_term);
@@ -197,7 +212,7 @@ void handle_vote_reply_message() {
         &msgSeq,
         &infoSeq,
         DDS_LENGTH_UNLIMITED,
-        requestVoteReply_QueryCondition
+        requestVoteReply_ReadCondition
     );
     checkStatus(status, "RevPiDDS_RequestVoteReplyDataReader_take");
 
@@ -214,11 +229,16 @@ void handle_vote_reply_message() {
                 voted_candidate = msgSeq._buffer[i].candidateID;
                 sender_ID = msgSeq._buffer[i].senderID;
                 voteGranted = msgSeq._buffer[i].voteGranted;
+
+                if (sender_ID == this_replica->ID) {
+                    continue;
+                }
+
                 printf("Got some new requestVoteReply Data from %d - Term: %d Granted: %d voted for: %d\n", sender_ID, voteTerm, voteGranted, voted_candidate);
                 
                 if (this_replica->role != CANDIDATE) {
                     printf("Got a vote reply, but I'm not candidate anymore\n");
-                    pthread_mutex_unlock(&this_replica->consensus_mutex);
+                    // pthread_mutex_unlock(&this_replica->consensus_mutex);
                     RevPiDDS_RequestVoteReplyDataReader_return_loan(requestVoteReply_DataReader, &msgSeq, &infoSeq);
                     break;
                 }
@@ -260,11 +280,11 @@ void *receive_vote_requests() {
         if (status == DDS_RETCODE_OK) {
             guardList_index = 0;
             do {
-                if (collectVotes_GuardList->_buffer[guardList_index] == requestVoteReply_QueryCondition) {
+                if (collectVotes_GuardList->_buffer[guardList_index] == requestVoteReply_ReadCondition) {
                     pthread_mutex_lock(&this_replica->consensus_mutex);
                     handle_vote_reply_message();
                     pthread_mutex_unlock(&this_replica->consensus_mutex);
-                } else if (collectVotes_GuardList->_buffer[guardList_index] == requestVote_QueryCondition) {
+                } else if (collectVotes_GuardList->_buffer[guardList_index] == requestVote_ReadCondition) {
                     pthread_mutex_lock(&this_replica->consensus_mutex);
                     handle_vote_message();
                     pthread_mutex_unlock(&this_replica->consensus_mutex);

@@ -19,24 +19,26 @@ void DDSSetupConsensus() {
 }
 
 void DDSConsensusCleanup() {
-    g_status = DDS_WaitSet_detach_condition(appendEntries_WaitSet, electionTimer_QueryCondition);
-    checkStatus(g_status, "DDS_WaitSet_detach_condition (appendEntries_Waitset/electionTimer_QueryCondition)");
-    g_status = DDS_WaitSet_detach_condition(appendEntriesReply_WaitSet, appendEntriesReply_QueryCondition);
+    g_status = DDS_WaitSet_detach_condition(appendEntries_WaitSet, electionTimer_ReadCondition);
+    checkStatus(g_status, "DDS_WaitSet_detach_condition (appendEntries_Waitset/electionTimer_ReadCondition)");
+    g_status = DDS_WaitSet_detach_condition(appendEntriesReply_WaitSet, appendEntriesReply_ReadCondition);
     checkStatus(g_status, "DDS_WaitSet_detach_condition (appendEntriesReply_Waitset/ QUeryCondition)");
-    g_status = DDS_WaitSet_detach_condition(leaderElection_WaitSet, electionTimer_QueryCondition);
-    checkStatus(g_status, "DDS_WaitSet_detach_condition (leaderElection_Waitset/electionTimer_QueryCondition)");
-    g_status = DDS_WaitSet_detach_condition(collectVotes_WaitSet, requestVote_QueryCondition);
-    checkStatus(g_status, "DDS_WaitSet_detach_condition (collectVotes_Waitset/requestVote_QueryCondition)");
-    g_status = DDS_WaitSet_detach_condition(collectVotes_WaitSet, requestVoteReply_QueryCondition);
-    checkStatus(g_status, "DDS_WaitSet_detach_condition (collectVotes_WaitSet/requestVoteReply_QueryCondition)");
+    g_status = DDS_WaitSet_detach_condition(leaderElection_WaitSet, electionTimer_ReadCondition);
+    checkStatus(g_status, "DDS_WaitSet_detach_condition (leaderElection_Waitset/electionTimer_ReadCondition)");
+    g_status = DDS_WaitSet_detach_condition(collectVotes_WaitSet, requestVote_ReadCondition);
+    checkStatus(g_status, "DDS_WaitSet_detach_condition (collectVotes_Waitset/requestVote_ReadCondition)");
+    g_status = DDS_WaitSet_detach_condition(collectVotes_WaitSet, requestVoteReply_ReadCondition);
+    checkStatus(g_status, "DDS_WaitSet_detach_condition (collectVotes_WaitSet/requestVoteReply_ReadCondition)");
     g_status = DDS_WaitSet_detach_condition(activateSpare_WaitSet, activateSpare_ReadCondition);
     checkStatus(g_status, "DDS_WaitSet_detach_condition (activateSpare_WaitSet/activateSpare_ReadCondition)");
 
-    g_status = RevPiDDS_AppendEntriesDataReader_delete_readcondition(appendEntries_DataReader, electionTimer_QueryCondition);
+    g_status = RevPiDDS_AppendEntriesDataReader_delete_readcondition(appendEntries_DataReader, electionTimer_ReadCondition);
     checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (electionTimer)");
-    g_status = RevPiDDS_RequestVoteDataReader_delete_readcondition(requestVote_DataReader, requestVote_QueryCondition);
+    g_status = RevPiDDS_RequestVoteDataReader_delete_readcondition(requestVote_DataReader, requestVote_ReadCondition);
     checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (requestVote)");
-    g_status = RevPiDDS_RequestVoteReplyDataReader_delete_readcondition(requestVoteReply_DataReader, requestVoteReply_QueryCondition);
+    g_status = RevPiDDS_RequestVoteReplyDataReader_delete_readcondition(requestVoteReply_DataReader, requestVoteReply_ReadCondition);
+    checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (requestVoteReply)");
+    g_status = RevPiDDS_RequestVoteReplyDataReader_delete_readcondition(appendEntriesReply_DataReader, appendEntriesReply_ReadCondition);
     checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (requestVoteReply)");
     g_status = RevPiDDS_RequestVoteReplyDataReader_delete_readcondition(activateSpare_DataReader, activateSpare_ReadCondition);
     checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (activateSpare)");
@@ -44,27 +46,40 @@ void DDSConsensusCleanup() {
     deleteDataReader(appendEntries_Subscriber, appendEntries_DataReader);
     deleteDataReader(requestVote_Subscriber, requestVote_DataReader);
     deleteDataReader(requestVoteReply_Subscriber, requestVoteReply_DataReader);
+    deleteDataReader(appendEntriesReply_Subscriber, appendEntriesReply_DataReader);
+    deleteDataReader(activateSpare_Subscriber, activateSpare_DataReader);
     deleteSubscriber(domainParticipant, appendEntries_Subscriber);
     deleteSubscriber(domainParticipant, requestVote_Subscriber);
     deleteSubscriber(domainParticipant, requestVoteReply_Subscriber);
+    deleteSubscriber(domainParticipant, appendEntriesReply_Subscriber);
+    deleteSubscriber(domainParticipant, activateSpare_Subscriber);
     deleteDataWriter(appendEntries_Publisher, appendEntries_DataWriter);
     deleteDataWriter(requestVote_Publisher, requestVote_DataWriter);
     deleteDataWriter(requestVoteReply_Publisher, requestVoteReply_DataWriter);
+    deleteDataWriter(appendEntriesReply_Publisher, appendEntriesReply_DataWriter);
+    deleteDataWriter(activateSpare_Publisher, activateSpare_DataWriter);
     deletePublisher(domainParticipant, appendEntries_Publisher);
     deletePublisher(domainParticipant, requestVote_Publisher);
     deletePublisher(domainParticipant, requestVoteReply_Publisher);
+    deletePublisher(domainParticipant, appendEntriesReply_Publisher);
+    deletePublisher(domainParticipant, activateSpare_Publisher);
     deleteTopic(domainParticipant, appendEntries_Topic);
     deleteTopic(domainParticipant, requestVote_Topic);
     deleteTopic(domainParticipant, requestVoteReply_Topic);
+    deleteTopic(domainParticipant, appendEntries_Topic);
+    deleteTopic(domainParticipant, activateSpare_Topic);
 
     DDS_free(appendEntries_GuardList);
     DDS_free(leaderElection_GuardList);
     DDS_free(collectVotes_GuardList);
+    DDS_free(appendEntriesReply_GuardList);
+    DDS_free(activateSpare_GuardList);
 
     DDS_free(appendEntries_WaitSet);
     DDS_free(leaderElection_WaitSet);
     DDS_free(collectVotes_WaitSet);
-
+    DDS_free(appendEntriesReply_WaitSet);
+    DDS_free(activateSpare_WaitSet);
 }
 
 void createAppendEntriesTopic() {
@@ -91,17 +106,14 @@ void createAppendEntriesTopic() {
     checkStatus(status, "DDS_DomainParticipant_get_default_topic_qos");
 
     // TODO
-    // topicQos->deadline.period.sec = 3;
-    // topicQos->deadline.period.nanosec = 0;
     topicQos->destination_order.kind = DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
     topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
     topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     topicQos->history.depth = 5;
-    topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topicQos->resource_limits.max_samples = 15;
+    topicQos->resource_limits.max_samples = 5;
     topicQos->resource_limits.max_instances = 1;
-    topicQos->resource_limits.max_samples_per_instance = 15;
+    topicQos->resource_limits.max_samples_per_instance = 5;
 
     // Create the Topic's in the DDS Domain.
     typeName = RevPiDDS_AppendEntriesTypeSupport_get_type_name(typeSupport);
@@ -193,11 +205,10 @@ void createAppendEntriesReplyTopic() {
     topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
     topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     topicQos->history.depth = 5;
-    topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topicQos->resource_limits.max_samples = 15;
+    topicQos->resource_limits.max_samples = 5;
     topicQos->resource_limits.max_instances = 1;
-    topicQos->resource_limits.max_samples_per_instance = 15;
+    topicQos->resource_limits.max_samples_per_instance = 5;
 
     // Create the Topic's in the DDS Domain.
     typeName = RevPiDDS_AppendEntriesReplyTypeSupport_get_type_name(typeSupport);
@@ -291,11 +302,10 @@ void createRequestVoteTopic() {
     topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
     topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     topicQos->history.depth = 5;
-    topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topicQos->resource_limits.max_samples = 15;
+    topicQos->resource_limits.max_samples = 5;
     topicQos->resource_limits.max_instances = 1;
-    topicQos->resource_limits.max_samples_per_instance = 15;
+    topicQos->resource_limits.max_samples_per_instance = 5;
 
     // Create the Topic's in the DDS Domain.
     typeName = RevPiDDS_RequestVoteTypeSupport_get_type_name(typeSupport);
@@ -349,8 +359,6 @@ void createRequestVoteTopic() {
 
     requestVote_DataReader = createDataReader(requestVote_Subscriber, requestVote_Topic, dataReaderQos);
 
-    // requestVote_Listener = createDataReaderListener();
-
     DDS_free(topicQos);
     DDS_free(typeName);
     DDS_free(dataWriterQos);
@@ -389,11 +397,10 @@ void createRequestVoteReplyTopic() {
     topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
     topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     topicQos->history.depth = 5;
-    topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topicQos->resource_limits.max_samples = 15;
+    topicQos->resource_limits.max_samples = 5;
     topicQos->resource_limits.max_instances = 1;
-    topicQos->resource_limits.max_samples_per_instance = 15;
+    topicQos->resource_limits.max_samples_per_instance = 5;
 
     // Create the Topic's in the DDS Domain.
     typeName = RevPiDDS_RequestVoteReplyTypeSupport_get_type_name(typeSupport);
@@ -485,11 +492,10 @@ void createActivateSpareTopic() {
     topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
     topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     topicQos->history.depth = 5;
-    // topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topicQos->resource_limits.max_samples = 15;
+    topicQos->resource_limits.max_samples = 5;
     topicQos->resource_limits.max_instances = 5;
-    topicQos->resource_limits.max_samples_per_instance = 15;
+    topicQos->resource_limits.max_samples_per_instance = 5;
 
     // Create the Topic's in the DDS Domain.
     typeName = RevPiDDS_ActivateSpareTypeSupport_get_type_name(typeSupport);
@@ -553,22 +559,7 @@ void createActivateSpareTopic() {
 
 }
 
-void createLeaderElectionDDSFeatures(const uint8_t ID) {
-
-    char ID_string[2];
-    sprintf(ID_string, "%d", ID);
-    DDS_char* ID_queryParameter = ID_string;
-    DDS_char* ID_queryString = "senderID!=%0";
-
-    DDS_StringSeq* query_parameters = DDS_StringSeq__alloc();
-
-    query_parameters->_length = 1;
-    query_parameters->_maximum = 1;
-    query_parameters->_release = TRUE;
-    query_parameters->_buffer = DDS_StringSeq_allocbuf (1);
-    checkHandle(query_parameters->_buffer, "DDS_StringSeq_allocbuf");
-    query_parameters->_buffer[0] = DDS_string_dup (ID_queryParameter);
-    checkHandle(query_parameters->_buffer[0], "DDS_string_dup");
+void createLeaderElectionDDSFeatures() {
 
     leaderElection_WaitSet = DDS_WaitSet__alloc();
     checkHandle(leaderElection_WaitSet, "DDS_WaitSet__alloc collect Votes");
@@ -625,45 +616,37 @@ void createLeaderElectionDDSFeatures(const uint8_t ID) {
     activateSpare_GuardList->_buffer = DDS_ConditionSeq_allocbuf(1);
     checkHandle(activateSpare_GuardList->_buffer, "DDS_ConditionSeq_allocbuf");
 
-    requestVoteReply_QueryCondition = DDS_DataReader_create_querycondition(
+    requestVoteReply_ReadCondition = DDS_DataReader_create_readcondition(
         requestVoteReply_DataReader,
         DDS_NOT_READ_SAMPLE_STATE,
         DDS_NEW_VIEW_STATE | DDS_NOT_NEW_VIEW_STATE, // TODO Validate if this is correct
-        DDS_ALIVE_INSTANCE_STATE,
-        ID_queryString,
-        query_parameters
+        DDS_ALIVE_INSTANCE_STATE
     );
-    checkHandle(requestVoteReply_QueryCondition, "DDS_DataReader_create_querycondition (requestVoteReply)");
+    checkHandle(requestVoteReply_ReadCondition, "DDS_DataReader_create_readcondition (requestVoteReply)");
 
-    requestVote_QueryCondition = DDS_DataReader_create_querycondition(
+    requestVote_ReadCondition = DDS_DataReader_create_readcondition(
         requestVote_DataReader,
         DDS_NOT_READ_SAMPLE_STATE,
         DDS_NEW_VIEW_STATE | DDS_NOT_NEW_VIEW_STATE, // TODO Validate if this is correct
-        DDS_ALIVE_INSTANCE_STATE,
-        ID_queryString,
-        query_parameters
+        DDS_ALIVE_INSTANCE_STATE
     );
-    checkHandle(requestVote_QueryCondition, "DDS_DataReader_create_querycondition (requestVote)");
+    checkHandle(requestVote_ReadCondition, "DDS_DataReader_create_readcondition (requestVote)");
 
-    electionTimer_QueryCondition = DDS_DataReader_create_querycondition(
+    electionTimer_ReadCondition = DDS_DataReader_create_readcondition(
         appendEntries_DataReader,
         DDS_NOT_READ_SAMPLE_STATE,
         DDS_NEW_VIEW_STATE | DDS_NOT_NEW_VIEW_STATE,
-        DDS_ALIVE_INSTANCE_STATE,
-        ID_queryString,
-        query_parameters
+        DDS_ALIVE_INSTANCE_STATE
     );
-    checkHandle(electionTimer_QueryCondition, "DDS_DataReader_create_querycondition (electionTimer)");
+    checkHandle(electionTimer_ReadCondition, "DDS_DataReader_create_readcondition (electionTimer)");
 
-    appendEntriesReply_QueryCondition = DDS_DataReader_create_querycondition(
+    appendEntriesReply_ReadCondition = DDS_DataReader_create_readcondition(
         appendEntriesReply_DataReader,
         DDS_NOT_READ_SAMPLE_STATE,
         DDS_NEW_VIEW_STATE | DDS_NOT_NEW_VIEW_STATE,
-        DDS_ALIVE_INSTANCE_STATE,
-        ID_queryString,
-        query_parameters
+        DDS_ALIVE_INSTANCE_STATE
     );
-    checkHandle(appendEntriesReply_QueryCondition, "DDS_DataReader_create_querycondition (appendEntriesReply)");
+    checkHandle(appendEntriesReply_ReadCondition, "DDS_DataReader_create_readcondition (appendEntriesReply)");
 
     activateSpare_ReadCondition = RevPiDDS_InputDataReader_create_readcondition(
         activateSpare_DataReader,
@@ -674,23 +657,17 @@ void createLeaderElectionDDSFeatures(const uint8_t ID) {
     checkHandle(activateSpare_ReadCondition, "DDS_DataReader_create_readcondition (activateSpare)");
 
 
-    g_status = DDS_WaitSet_attach_condition(collectVotes_WaitSet, requestVote_QueryCondition);
-    checkStatus(g_status, "DDS_WaitSet_attach_condition (requestVote_QueryCondition)");
-    g_status = DDS_WaitSet_attach_condition(collectVotes_WaitSet, requestVoteReply_QueryCondition);
-    checkStatus(g_status, "DDS_WaitSet_attach_condition (RequestVoteReply QueryCondition)");
-
-    g_status = DDS_WaitSet_attach_condition(leaderElection_WaitSet, electionTimer_QueryCondition);
-    checkStatus(g_status, "DDS_WaitSet_attach_condition (append Entries QueryCondition)");
-
-    g_status = DDS_WaitSet_attach_condition(appendEntries_WaitSet, electionTimer_QueryCondition);
-    checkStatus(g_status, "DDS_WaitSet_attach_condition (appendEntries_QueryCondition)");
-
-    g_status = DDS_WaitSet_attach_condition(appendEntriesReply_WaitSet, appendEntriesReply_QueryCondition);
-    checkStatus(g_status, "DDS_WaitSet_attach_condition (appendEntriesReply_QueryCondition)");
-
+    g_status = DDS_WaitSet_attach_condition(collectVotes_WaitSet, requestVote_ReadCondition);
+    checkStatus(g_status, "DDS_WaitSet_attach_condition (requestVote_ReadCondition)");
+    g_status = DDS_WaitSet_attach_condition(collectVotes_WaitSet, requestVoteReply_ReadCondition);
+    checkStatus(g_status, "DDS_WaitSet_attach_condition (RequestVoteReply ReadCondition)");
+    g_status = DDS_WaitSet_attach_condition(leaderElection_WaitSet, electionTimer_ReadCondition);
+    checkStatus(g_status, "DDS_WaitSet_attach_condition (append Entries ReadCondition)");
+    g_status = DDS_WaitSet_attach_condition(appendEntries_WaitSet, electionTimer_ReadCondition);
+    checkStatus(g_status, "DDS_WaitSet_attach_condition (appendEntries_ReadCondition)");
+    g_status = DDS_WaitSet_attach_condition(appendEntriesReply_WaitSet, appendEntriesReply_ReadCondition);
+    checkStatus(g_status, "DDS_WaitSet_attach_condition (appendEntriesReply_ReadCondition)");
     g_status = DDS_WaitSet_attach_condition(activateSpare_WaitSet, activateSpare_ReadCondition);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (activateSpare_ReadCondition)");
-
-    DDS_free(query_parameters);
 
 }

@@ -63,6 +63,7 @@ int main(int argc, char *argv[]) {
     DDS_sequence_RevPiDDS_Input* message_seq = DDS_sequence_RevPiDDS_Input__alloc();
     DDS_SampleInfoSeq* message_infoSeq = DDS_SampleInfoSeq__alloc();
     DDS_Duration_t input_Timeout = DDS_DURATION_INFINITE;
+    bool running = true;
 
     DDSSetup();
     // uint8_t message = 0;
@@ -72,7 +73,7 @@ int main(int argc, char *argv[]) {
     status = DDS_WaitSet_attach_condition(input_WaitSet, input_ReadCondition);
     checkStatus(status, "DDS_WaitSet_attach_condition (input_ReadCondition)");
 
-    while (true) {
+    while (running) {
         status = DDS_WaitSet_wait(input_WaitSet, input_GuardList, &input_Timeout);
         pthread_mutex_lock(&this_replica->consensus_mutex);
         if (this_replica->role != LEADER) {
@@ -82,7 +83,7 @@ int main(int argc, char *argv[]) {
         printf("Input waitSet triggered\n");
         if (status == DDS_RETCODE_OK) {
 
-            status = RevPiDDS_InputDataReader_read_w_condition(
+            status = RevPiDDS_InputDataReader_take_w_condition(
                     input_DataReader,
                     message_seq,
                     message_infoSeq,
@@ -95,6 +96,11 @@ int main(int argc, char *argv[]) {
                     printf("\n    --- New message received ---");
                     if( message_infoSeq->_buffer[i].valid_data == TRUE ) {
                         printf("\n    Message : \"%d\"\n", message_seq->_buffer[i].id);
+
+                        if (message_seq->_buffer[i].id == 0) {
+                            running = false;
+                            break;
+                        }
 
                         pthread_mutex_unlock(&this_replica->consensus_mutex);
                         cluster_process(&message_seq->_buffer[i], &perform_voting, &on_no_results);

@@ -8,8 +8,7 @@
 
 DDS_Topic appendEntries_Topic, appendEntriesReply_Topic, requestVote_Topic, requestVoteReply_Topic, activateSpare_Topic;
 DDS_WaitSet appendEntries_WaitSet, appendEntriesReply_WaitSet, collectVotes_WaitSet, leaderElection_WaitSet, activateSpare_WaitSet;
-DDS_QueryCondition electionTimer_QueryCondition, requestVote_QueryCondition, requestVoteReply_QueryCondition, appendEntriesReply_QueryCondition;
-DDS_ReadCondition activateSpare_ReadCondition;
+DDS_ReadCondition electionTimer_ReadCondition, requestVote_ReadCondition, requestVoteReply_ReadCondition, appendEntriesReply_ReadCondition, activateSpare_ReadCondition;
 DDS_Subscriber appendEntries_Subscriber, appendEntriesReply_Subscriber, requestVote_Subscriber, requestVoteReply_Subscriber, activateSpare_Subscriber;
 DDS_DataReader appendEntries_DataReader, appendEntriesReply_DataReader, requestVote_DataReader, requestVoteReply_DataReader, activateSpare_DataReader;
 DDS_Publisher appendEntries_Publisher, appendEntriesReply_Publisher, requestVote_Publisher, requestVoteReply_Publisher, activateSpare_Publisher;
@@ -19,6 +18,6 @@ DDS_ConditionSeq *appendEntries_GuardList, *appendEntriesReply_GuardList, *colle
 void DDSSetupConsensus();
 void DDSConsensusCleanup();
 
-void createLeaderElectionDDSFeatures(const uint8_t ID);
+void createLeaderElectionDDSFeatures();
 
 #endif

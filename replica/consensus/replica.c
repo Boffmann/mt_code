@@ -18,6 +18,7 @@ void *runElectionTimer() {
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_ReturnCode_t status;
     uint32_t received_Term = 0;
+    uint8_t sender_ID;
     DDS_sequence_RevPiDDS_Entry entries_Seq;
     RevPiDDS_AppendEntriesReply* appendEntriesReply_message;
 
@@ -45,7 +46,7 @@ void *runElectionTimer() {
                 &msgSeq,
                 &infoSeq,
                 DDS_LENGTH_UNLIMITED,
-                electionTimer_QueryCondition
+                electionTimer_ReadCondition
             );
             checkStatus(status, "RevPiDDS_AppendEntriesDataReader_take (election Timer)");
             if (this_replica->role == SPARE) {
@@ -59,6 +60,12 @@ void *runElectionTimer() {
                     if (infoSeq._buffer[i].valid_data) {
                         received_Term = msgSeq._buffer[i].term;
                         entries_Seq = msgSeq._buffer[i].entries;
+                        sender_ID = msgSeq._buffer[i].senderID;
+
+                        if (sender_ID == this_replica->ID) {
+                            continue;
+                        }
+
                         if (received_Term > this_replica->current_term) {
                             become_follower(received_Term);
                         }
@@ -95,8 +102,8 @@ void *runElectionTimer() {
                             }
                         }
                     }
+                    printf("Election Timer received with term %d\n", this_replica->current_term);
                 }
-                printf("Election Timer received with term %d\n", this_replica->current_term);
             } else {
                 printf("Waitset election timer triggered again but DR is completely empty\n");
             }
@@ -156,8 +163,8 @@ void become_leader() {
     }
 
     printf("Make leader\n");
-    digital_write("O_1", 0);
-    digital_write("O_2", 1);
+    // digital_write("O_1", 0);
+    // digital_write("O_2", 1);
     this_replica->role = LEADER;
     this_replica->voted_for = VOTED_NONE;
 
@@ -170,8 +177,8 @@ void become_leader() {
 void become_follower(const uint32_t term) {
 
     printf("Make follower\n");
-    digital_write("O_1", 1);
-    digital_write("O_2", 0);
+    // digital_write("O_1", 1);
+    // digital_write("O_2", 0);
     this_replica->current_term = term;
     this_replica->role = FOLLOWER;
     this_replica->voted_for = VOTED_NONE;
@@ -294,7 +301,7 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
                 &msgSeq,
                 &infoSeq,
                 DDS_LENGTH_UNLIMITED,
-                appendEntriesReply_QueryCondition
+                appendEntriesReply_ReadCondition
             );
             checkStatus(status, "RevPiDDS_AppendEntriesReplyDataReader_take");
 
@@ -306,6 +313,11 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
                         sender_ID = msgSeq._buffer[i].senderID;
                         reply_ID = msgSeq._buffer[i].id;
                         success = msgSeq._buffer[i].success;
+
+                        if (sender_ID == this_replica->ID) {
+                            continue;
+                        }
+
                         printf("Got some new appendEntriesReply Data from %d - ReplyID: %d Term: %d Success: %d\n", sender_ID, reply_ID, received_Term, success);
                         if (success && reply_ID == input_ID) {
                             replica_result_t reply;

@@ -77,7 +77,6 @@ void createInputTopic() {
     topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
     topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     topicQos->history.depth = 5;
-    // topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
     topicQos->resource_limits.max_samples = 5;
     topicQos->resource_limits.max_instances = 5;
@@ -172,7 +171,6 @@ void createReplicaResultTopic() {
     topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
     topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     topicQos->history.depth = 5;
-    topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
     topicQos->resource_limits.max_samples = 5;
     topicQos->resource_limits.max_instances = 1;
