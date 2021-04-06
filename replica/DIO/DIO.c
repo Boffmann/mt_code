@@ -145,3 +145,20 @@ void digital_write(char* port_name, const bool value) {
                         sPiVariable.i16uAddress);
     }
 }
+
+// https://revolution.kunbus.com/the-hardware-watchdog-of-the-revpi-connect/
+SPIVariable spiWatchdogOut = {"RevPiLED", 0, 0, 0};
+SPIValue watchdogSPIValue = {0, 0, 0};
+void watchdog_init() {
+
+    piControlGetVariableInfo(&spiWatchdogOut);
+    watchdogSPIValue.i16uAddress = spiWatchdogOut.i16uAddress;
+    watchdogSPIValue.i8uBit = 7;
+    watchdogSPIValue.i8uValue = 1;
+
+}
+
+void watchdog_timer_reset() {
+    watchdogSPIValue.i8uValue = watchdogSPIValue.i8uValue^0x01;
+    
+}

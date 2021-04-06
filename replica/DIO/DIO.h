@@ -6,8 +6,9 @@
 
 #define PICONTROL_DEVICE    "/dev/piControl0"
 #define KB_IOC_MAGIC 'K'
-#define KB_SET_VALUE        _IO(KB_IOC_MAGIC, 16)   ///< set the value of one bit in the process image
-#define KB_FIND_VARIABLE    _IO(KB_IOC_MAGIC, 17)   ///< find a variable defined in piCtory
+#define KB_SET_VALUE                _IO(KB_IOC_MAGIC, 16)   ///< set the value of one bit in the process image
+#define KB_FIND_VARIABLE            _IO(KB_IOC_MAGIC, 17)   ///< find a variable defined in piCtory
+#define KB_SET_OUTPUT_WATCHDOG      _IO(KB_IOC_MAGIC, 26)   ///< activate a watchdog for this handle
 
 // Mostly taken from demo code on RevPi
 
@@ -25,5 +26,8 @@ typedef struct {
 } SPIVariable;
 
 void digital_write(char* port_name, const bool value);
+
+void watchdog_init();
+void watchdog_timer_reset();
 
 #endif

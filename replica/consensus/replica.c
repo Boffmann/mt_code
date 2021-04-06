@@ -6,6 +6,8 @@
 #include "datamodel.h"
 #include "DDSConsensusManager.h"
 #include "DIO/DIO.h"
+#include "state/train.h"
+#include "state/DDSStateManager.h"
 #include "leaderElection.h"
 #include "spare.h"
 
@@ -19,7 +21,7 @@ void *runElectionTimer() {
     DDS_ReturnCode_t status;
     uint32_t received_Term = 0;
     uint8_t sender_ID;
-    DDS_sequence_RevPiDDS_Entry entries_Seq;
+    DDS_sequence_char entries_Seq;
     RevPiDDS_AppendEntriesReply* appendEntriesReply_message;
 
 
@@ -81,6 +83,8 @@ void *runElectionTimer() {
                         }
                         if (entries_Seq._length > 0) {
                             printf("Got some new entries\n");
+                            uint32_t id = msgSeq._buffer[i].id;
+
                             if (this_replica->ID >= ACTIVE_REPLICAS) {
                                 bool is_active = activate_when_promted();
                                 if (!is_active) {
@@ -88,7 +92,6 @@ void *runElectionTimer() {
                                 }
                             }
                             for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
-                                uint32_t id = entries_Seq._buffer[entry_index].id;
                                 printf("Got the following entry: ID: %d\n", id);
                                 appendEntriesReply_message = RevPiDDS_AppendEntriesReply__alloc();
                                 appendEntriesReply_message->id = id;
@@ -153,6 +156,8 @@ void send_heartbeat(int signum, siginfo_t* info, void* args) {
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
     checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message");
 
+    update_train_state();
+
     DDS_free(appendEntries_message);
 }
 
@@ -206,6 +211,8 @@ void initialize_replica(const uint8_t id) {
 
     DDSSetupConsensus();
     createLeaderElectionDDSFeatures(id);
+    DDSSetupState();
+
 
     srand(time(NULL));
     DDS_unsigned_long id_dependent_timeout_sec = 0;
@@ -274,11 +281,13 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
     appendEntries_message = RevPiDDS_AppendEntries__alloc();
     appendEntries_message->senderID = this_replica->ID;
     appendEntries_message->term = this_replica->current_term;
-    uint8_t payload_size = 1;
-    appendEntries_message->entries._length = payload_size;
-    appendEntries_message->entries._maximum = payload_size;
-    appendEntries_message->entries._buffer = DDS_sequence_RevPiDDS_Entry_allocbuf(payload_size);
-    appendEntries_message->entries._buffer[0].id = handle->id;
+    appendEntries_message->id = input_ID;
+    // uint8_t payload_size = 1;
+    appendEntries_message->entries = handle->data;
+    // appendEntries_message->entries._length = payload_size;
+    // appendEntries_message->entries._maximum = payload_size;
+    // appendEntries_message->entries._buffer = DDS_sequence_char_allocbuf(payload_size);
+    // appendEntries_message->entries._buffer = handle->data._buffer;
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
     checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message");
 

@@ -1,9 +1,3 @@
-# LISTENER CMakeLists.txt
-
-#
-# External dependencies
-#
-
 include_directories($ENV{OSPL_HOME}/include)
 include_directories($ENV{OSPL_HOME}/include/sys)
 include_directories($ENV{OSPL_HOME}/include/dcps/C/SAC)
@@ -18,7 +12,7 @@ LINK_DIRECTORIES($ENV{EVENTLIB}/build/lib)
 set(OSPL_LINK_LIBS PUBLIC ddskernel dcpssac)
 set(EVENT_LIBS PUBLIC event)
 
-set(target consensus)
+set(target state)
 
 set(include_path 
   "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -29,15 +23,11 @@ set(generated_path "${CMAKE_BINARY_DIR}/gen")
 
 set(datamodel_lib datamodel)
 set(DDSCreator_lib DDSCreator)
-set(DIO_lib DIO)
-set(State_lib state)
 
 set(sources
-  ${source_path}/DDSConsensusManager.c
-  ${source_path}/decisionMaking.c
-  ${source_path}/leaderElection.c
-  ${source_path}/replica.c
-  ${source_path}/spare.c
+  ${source_path}/balise.c
+  ${source_path}/DDSStateManager.c
+  ${source_path}/train.c
 )
 
 #
@@ -72,7 +62,4 @@ target_link_libraries(${target}
   pthread
   ${datamodel_lib}
   ${DDSCreator_lib}
-  ${DIO_lib}
-  ${State_lib}
-  "evaluator"
 )

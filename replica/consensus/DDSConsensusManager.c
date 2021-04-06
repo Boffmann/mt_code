@@ -66,7 +66,7 @@ void DDSConsensusCleanup() {
     deleteTopic(domainParticipant, appendEntries_Topic);
     deleteTopic(domainParticipant, requestVote_Topic);
     deleteTopic(domainParticipant, requestVoteReply_Topic);
-    deleteTopic(domainParticipant, appendEntries_Topic);
+    deleteTopic(domainParticipant, appendEntriesReply_Topic);
     deleteTopic(domainParticipant, activateSpare_Topic);
 
     DDS_free(appendEntries_GuardList);
