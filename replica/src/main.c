@@ -6,8 +6,14 @@
 #include "consensus/replica.h"
 #include "DDSCreator/CheckStatus.h"
 #include "DDSEntitiesManager.h"
+#include "state/movementAuthority.h"
+#include "state/balise.h"
+#include "state/train.h"
 #include "datamodel.h"
 #include "evaluation/evaluator.h"
+
+#define MOVEMENT_AUTHORITY_RBC_ID 1
+#define BALISE_LINKING_RBC_ID 2
 
 replica_t *this_replica;
 
@@ -20,6 +26,18 @@ void perform_voting(RevPiDDS_Input* input, const replica_result_t* results, cons
     if (this_replica->role != LEADER) {
         printf("Got new voting material but not leader anymore\n");
         return;
+    }
+
+    // TODO Do this only when should not breaking
+
+    if (input != NULL) {
+
+        balise_t referenced_balise;
+        printf("Data::::: %d\n", input->data._buffer[2]);
+        bool is_linked = get_balise_if_linked(input->data._buffer[2], &referenced_balise);
+        if (is_linked) {
+            set_train_position(referenced_balise.position);
+        }
     }
 
     // TODO Can it happen that replica died while processing and come back alive when result was processed by another leader?
@@ -97,14 +115,40 @@ int main(int argc, char *argv[]) {
                     if( message_infoSeq->_buffer[i].valid_data == TRUE ) {
                         printf("\n    Message : \"%d\"\n", message_seq->_buffer[i].id);
 
-                        if (message_seq->_buffer[i].id == 0) {
+                        DDS_sequence_long data = message_seq->_buffer[i].data;
+                        if (data._buffer[0] == 0) {
                             running = false;
                             break;
+                        } else if (data._buffer[0] == MOVEMENT_AUTHORITY_RBC_ID) {
+                            if (data._buffer[1] != 2) {
+                                printf("Movement Authority has to less data\n");
+                                continue;
+                            }
+                            movement_authority_t ma;
+                            // TODO Ist unschön, dass man die IDs von den einzelnen dingen im Protokoll wissen muss
+                            ma.start_position = data._buffer[2];
+                            ma.end_position = data._buffer[3];
+
+                            set_movement_authority(&ma);
+                        } else if (data._buffer[0] == BALISE_LINKING_RBC_ID) {
+                            if (data._buffer[1] % 2 != 0) {
+                                printf("Linked balises incomplete\n");
+                                continue;
+                            }
+                            int num_linked_balises = data._buffer[1] / 2;
+                            for (int i = 0; i < num_linked_balises; ++i) {
+                                balise_t balise;
+                                balise.ID = data._buffer[2 + 2 * i];
+                                balise.position = data._buffer[2 + 2 * i + 1];
+                                printf("Add a balise %d\n", balise.ID);
+                                add_linked_balise(&balise);
+                            }
+                        } else {
+                            pthread_mutex_unlock(&this_replica->consensus_mutex);
+                            cluster_process(&message_seq->_buffer[i], &perform_voting, &on_no_results);
+                            pthread_mutex_lock(&this_replica->consensus_mutex);
                         }
 
-                        pthread_mutex_unlock(&this_replica->consensus_mutex);
-                        cluster_process(&message_seq->_buffer[i], &perform_voting, &on_no_results);
-                        pthread_mutex_lock(&this_replica->consensus_mutex);
                     } else {
                         printf("\n    Data is invalid!\n");
                     }

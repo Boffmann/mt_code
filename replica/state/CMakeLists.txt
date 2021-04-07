@@ -27,6 +27,7 @@ set(DDSCreator_lib DDSCreator)
 set(sources
   ${source_path}/balise.c
   ${source_path}/DDSStateManager.c
+  ${source_path}/movementAuthority.c
   ${source_path}/train.c
 )
 

@@ -1,6 +1,0 @@
-module RevPiDDS {
-  struct Input {
-    long test;
-  };
-  #pragma keylist Input test
-};

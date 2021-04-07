@@ -15,15 +15,14 @@ bool should_brake() {
 bool process_input(const char* data, const uint8_t data_length) {
     balise_t processed_balise;
 
-    if (data_length > 2) {
-        processed_balise.internal_ID = data[0];
-        processed_balise.num_balises_in_group = data[1];
-        processed_balise.balise_group_ID = data[2];
+    if (data_length > 1) {
+        processed_balise.ID = data[0];
+        processed_balise.position = data[1];
     }
     // Balise group for updating position
-    balise_group_t linked_balise_group;
+    balise_t linked_balise;
 
-    bool is_linked = get_balise_group_if_linked(processed_balise.balise_group_ID, &linked_balise_group);
+    bool is_linked = get_balise_if_linked(processed_balise.ID, &linked_balise);
 
     if (!is_linked) {
         return false;
@@ -36,11 +35,9 @@ bool process_input(const char* data, const uint8_t data_length) {
         return false;
     }
 
-    if (abs((int)current_state.position - (int)linked_balise_group.position) > MAX_POSITION_DRIFT) {
+    if (current_state.position.min_position > linked_balise.position || current_state.position.max_position < linked_balise.position) {
         return false;
     }
-
-    set_train_position(linked_balise_group.position);
 
     return should_brake();
 

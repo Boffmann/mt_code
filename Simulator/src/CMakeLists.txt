@@ -13,10 +13,11 @@ LINK_DIRECTORIES($ENV{OSPL_HOME}/lib)
 
 set(OSPL_LINK_LIBS PUBLIC ddskernel dcpssac)
 
-set(target IO)
+set(target RevPiTrainSimulator)
 
 set(include_path 
   "${CMAKE_CURRENT_SOURCE_DIR}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../../jsmn"
 )
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 set(generated_path "${CMAKE_BINARY_DIR}/gen")
@@ -27,6 +28,8 @@ set(sources
   ${source_path}/CheckStatus.c
   ${source_path}/DDSEntitiesCreator.c
   ${source_path}/main.c
+  ${source_path}/scenario.c
+  ${source_path}/simulator.c
 )
 
 #

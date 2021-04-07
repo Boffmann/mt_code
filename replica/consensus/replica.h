@@ -17,19 +17,12 @@
 #define LOG_PUFFER 5
 
 /**
- * Data structure for messages that should be processed by the cluster
- */
-typedef struct {
-    uint32_t id;
-    uint32_t term;
-} log_entry_t;
-
-/**
  * Data structure that encodes a replica's decision to a log entry
  */
 typedef struct {
     uint32_t replica_id;
     uint32_t term;          // The term in which this result was generated
+    bool should_break;
 } replica_result_t;
 
 /**
@@ -54,11 +47,16 @@ typedef struct {
     uint8_t voted_for;                  // The id for the replica that this replica voted for in current_term
 
     pthread_mutex_t consensus_mutex;    // Mutex for atomically accessing this replica's fields
+    pthread_mutex_t heartbeat_cond_lock;
+    pthread_cond_t cond_send_heartbeats;
     pthread_t election_timer_thread;    // The thread in which the election timer is read
     pthread_t request_vote_thread;      // The thread in which requests votes and replies are processed
+    pthread_t heartbeat_thread;
 
-    struct sigaction heartbeat_action;  // Used for periodic heartbeat signals (for leader)
-    struct itimerval heartbeat_timer;   // Used for periodic heartbeat signals (for leader)
+    struct timespec heartbeat_timeout;
+
+    // struct sigaction heartbeat_action;  // Used for periodic heartbeat signals (for leader)
+    // struct itimerval heartbeat_timer;   // Used for periodic heartbeat signals (for leader)
     DDS_Duration_t election_timeout;    // Timeout at which a leader is declared dead when heartbeats are missed
 
 } replica_t;

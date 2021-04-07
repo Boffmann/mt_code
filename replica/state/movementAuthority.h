@@ -5,8 +5,8 @@
 #include <stdbool.h>
 
 typedef struct {
+    uint32_t start_position;
     uint32_t end_position;
-    uint8_t target_speed;
 } movement_authority_t;
 
 void set_movement_authority(const movement_authority_t* ma);

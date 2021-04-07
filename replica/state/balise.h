@@ -6,21 +6,13 @@
 
 typedef struct {
 
-    uint8_t internal_ID;
-    uint8_t num_balises_in_group;
-    uint8_t balise_group_ID;
-
-} balise_t;
-
-typedef struct {
-
     uint8_t ID;
     uint32_t position;
 
-} balise_group_t;
+} balise_t;
 
-balise_group_t* linked_balise_groups;
+bool get_balise_if_linked(const uint8_t ID, balise_t* balise);
 
-bool get_balise_group_if_linked(const uint8_t ID, balise_group_t* group);
+void add_linked_balise(const balise_t* balise);
 
 #endif

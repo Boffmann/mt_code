@@ -2,7 +2,7 @@ module RevPiDDS {
 
   struct Input {
     long id;
-    sequence<char> data;
+    sequence<long> data;
   };
   #pragma keylist Input id
   
@@ -11,7 +11,7 @@ module RevPiDDS {
     long senderID;
     long id;
     // TODO die anderen replicas können auch direkt aus dem Input topic lesen
-    sequence<char> entries;
+    sequence<long> entries;
   };
   #pragma keylist AppendEntries term
 
@@ -49,27 +49,25 @@ module RevPiDDS {
   };
   #pragma keylist ActivateSpare
 
-  struct Balise {
-    short ID;
-    short groupID;
-    short numberInGroup;
-  };
-  #pragma keylist Balise ID groupID
-
-  struct BaliseGroup {
+  struct LinkedBalises {
     short ID;
     long position;
   };
-  #pragma keylist BaliseGroup ID
+  #pragma keylist LinkedBalises ID
 
   struct TrainState {
     double position;
+    double max_position;
+    double min_position;
     float speed;
     unsigned long long lastUpdateTime;
   };
   #pragma keylist TrainState
 
-  // TODO Train State
-  // TODO Movement Authority
+  struct MovementAuthority {
+    long start_position;
+    long end_position;
+  };
+  #pragma keylist MovementAuthority
 
 };

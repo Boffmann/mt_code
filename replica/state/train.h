@@ -5,9 +5,16 @@
 #include <stdbool.h>
 
 #define TRAIN_SPEED 1  // Train speed in m/s
+#define MAX_POS_INACCURACY 0.1
 
 typedef struct {
+    double min_position;
     double position;
+    double max_position;
+} train_position_t;
+
+typedef struct {
+    train_position_t position;
     float speed;
     unsigned long long lastUpdateTime;
 } train_state_t;

@@ -1,0 +1,9 @@
+module RevPiDDS {
+
+  struct Input {
+    long id;
+    sequence<long> data;
+  };
+  #pragma keylist Input id
+
+};
