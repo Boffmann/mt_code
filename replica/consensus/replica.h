@@ -4,7 +4,6 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <signal.h>
 #include <sys/time.h>
 
 #include "dds_dcps.h"

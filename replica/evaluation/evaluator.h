@@ -16,4 +16,6 @@ void evaluator_registered_election_timeout(const uint32_t id, const uint32_t ter
 void evaluator_leader_election_started();
 void evaluator_got_new_leader(const uint8_t id, const uint32_t term);
 
+// void eval_scenario_write_ma()
+
 #endif

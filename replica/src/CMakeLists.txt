@@ -9,14 +9,9 @@ include_directories($ENV{OSPL_HOME}/include/sys)
 include_directories($ENV{OSPL_HOME}/include/dcps/C/SAC)
 include_directories($ENV{OSPL_HOME}/include/dcps/C/C99)
 
-include_directories($ENV{EVENTLIB}/include)
-include_directories($ENV{EVENTLIB}/build/include)
-
 LINK_DIRECTORIES($ENV{OSPL_HOME}/lib)
-LINK_DIRECTORIES($ENV{EVENTLIB}/build/lib)
 
 set(OSPL_LINK_LIBS PUBLIC ddskernel dcpssac)
-set(EVENT_LIBS PUBLIC event)
 
 set(target replica)
 
