@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "movementAuthority.h"
+
 typedef enum { NONE, SCENARIO, MA, BALISES, BALISE } parse_keys;
 typedef enum { START, KEY, VALUE, STOP} parse_states;
 
@@ -22,12 +24,12 @@ typedef struct {
     size_t size;
 } balise_array_t;
 
-typedef struct {
+// typedef struct {
     
-    uint32_t start_pos;
-    uint32_t end_pos;
+//     uint32_t start_pos;
+//     uint32_t end_pos;
 
-} movement_authority_t;
+// } movement_authority_t;
 
 typedef struct {
 
@@ -39,7 +41,7 @@ typedef struct {
 
 void baliseArray_add_balise(balise_array_t* array, balise_t balise);
 
-void create_scenario_from(const char* scenario_path, scenario_t* scenario);
+bool create_scenario_from(const char* scenario_path, scenario_t* scenario);
 void scenario_cleanup(scenario_t *scenario);
 balise_array_t* scenario_get_linked_balises(const scenario_t* const scenario);
 

@@ -8,11 +8,78 @@
 DDS_DomainParticipant domainParticipant = DDS_OBJECT_NIL;
 uint32_t inputID = 2;
 
-DDS_Topic inputTopic;
+DDS_Topic inputTopic, trainStateTopic;
 DDS_Publisher input_Publisher;
 DDS_DataWriter input_DataWriter;
+DDS_Subscriber trainState_Subscriber;
+DDS_DataReader trainState_DataReader;
 
 const char* partitionName = DDS_OBJECT_NIL;
+
+void createTrainStateTopic() {
+
+    char* typeName = DDS_OBJECT_NIL;
+    DDS_TypeSupport typeSupport = DDS_OBJECT_NIL;
+    DDS_TopicQos* topicQos = DDS_OBJECT_NIL;
+    DDS_SubscriberQos* subscriberQos = DDS_OBJECT_NIL;
+    DDS_DataReaderQos* dataReaderQos = DDS_OBJECT_NIL;
+    DDS_ReturnCode_t status;
+
+    typeSupport = RevPiDDS_TrainStateTypeSupport__alloc();
+    checkHandle(typeSupport, "RevPiDDS_TrainStateTypeSupport__alloc");
+
+    typeName = RevPiDDS_TrainStateTypeSupport_get_type_name(typeSupport);
+
+    status = RevPiDDS_TrainStateTypeSupport_register_type(typeSupport, domainParticipant, typeName);
+    checkStatus(status, "RevPiDDS_TrainStateTypeSupport_register_type");
+
+    topicQos = DDS_TopicQos__alloc();
+    checkHandle(topicQos, "DDS_TopicQos__alloc");
+    status = DDS_DomainParticipant_get_default_topic_qos(domainParticipant, topicQos);
+    checkStatus(status, "DDS_DomainParticipant_get_default_topic_qos");
+
+    topicQos->destination_order.kind = DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
+    topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
+    topicQos->history.kind = DDS_KEEP_LAST_HISTORY_QOS;
+    topicQos->history.depth = 1;
+    topicQos->reliability.kind = DDS_BEST_EFFORT_RELIABILITY_QOS;
+
+    // Create the Topic's in the DDS Domain.
+    typeName = RevPiDDS_TrainStateTypeSupport_get_type_name(typeSupport);
+    trainStateTopic = createTopic(domainParticipant, "RevPi_TrainState", typeName, topicQos);
+
+    subscriberQos = DDS_SubscriberQos__alloc();
+    checkHandle(subscriberQos, "DDS_SubscriberQos__alloc");
+
+    status = DDS_DomainParticipant_get_default_subscriber_qos(domainParticipant, subscriberQos);
+    checkStatus(status, "DDS_DomainParticipant_get_default_subscriber_qos");
+    subscriberQos->partition.name._length = 1;
+    subscriberQos->partition.name._maximum = 1;
+    subscriberQos->partition.name._release = TRUE;
+    subscriberQos->partition.name._buffer = DDS_StringSeq_allocbuf(1);
+    checkHandle(subscriberQos->partition.name._buffer, "DDS_StringSeq_allocbuf");
+    subscriberQos->partition.name._buffer[0] = DDS_string_dup(g_partitionName);
+    checkHandle(subscriberQos->partition.name._buffer[0], "DDS_string_dup");
+
+    trainState_Subscriber = createSubscriber(domainParticipant, subscriberQos);
+
+    dataReaderQos = DDS_DataReaderQos__alloc();
+    checkHandle(dataReaderQos, "DDS_DataReaderQos__alloc");
+    status = DDS_Subscriber_get_default_datareader_qos(trainState_Subscriber, dataReaderQos);
+    checkStatus(status, "DDS_Subscriber_get_default_datareader_qos (TrainState_Topic)");
+    status = DDS_Subscriber_copy_from_topic_qos(trainState_Subscriber, dataReaderQos, topicQos);
+    checkStatus(status, "DDS_Publisher_copy_from_topic_qos");
+
+    trainState_DataReader = createDataReader(trainState_Subscriber, trainStateTopic, dataReaderQos);
+
+    DDS_free(topicQos);
+    DDS_free(typeName);
+    DDS_free(dataReaderQos);
+    DDS_free(typeName);
+    DDS_free(typeSupport);
+    DDS_free(subscriberQos);
+
+}
 
 void simulator_init() {
     char* typeName = DDS_OBJECT_NIL;
@@ -75,12 +142,15 @@ void simulator_init() {
 
     input_DataWriter = createDataWriter(input_Publisher, inputTopic, dataWriterQos);
 
+    createTrainStateTopic();
+
     DDS_free(topicQos);
     DDS_free(typeName);
     DDS_free(dataWriterQos);
     DDS_free(typeName);
     DDS_free(typeSupport);
     DDS_free(publisherQos);
+
 }
 
 
@@ -101,8 +171,8 @@ void send_movement_authority(const scenario_t* const scenario) {
 
     input_message->data._buffer[0] = 1;
     input_message->data._buffer[1] = 2;
-    input_message->data._buffer[2] = scenario->movement_authority.start_pos;
-    input_message->data._buffer[3] = scenario->movement_authority.end_pos;
+    input_message->data._buffer[2] = scenario->movement_authority.start_position;
+    input_message->data._buffer[3] = scenario->movement_authority.end_position;
 
     test_instance = RevPiDDS_InputDataWriter_register_instance(input_DataWriter, input_message);
 
@@ -179,9 +249,12 @@ void send_balise(const balise_t* const balise) {
     input_message->data._buffer[0] = 3;
     input_message->data._buffer[1] = 1;
     input_message->data._buffer[2] = balise->id;
-    // input_message->data._buffer[3] = balise->position;
 
-    printf("Send a balise with ID %d and position %d\n", balise->id, balise->position);
+    if (balise->linked) {
+        printf("Send a linked balise with ID %d and position %d\n", balise->id, balise->position);
+    } else {
+        printf("Send an unlinked balise with ID %d and position %d\n", balise->id, balise->position);
+    }
 
     test_instance = RevPiDDS_InputDataWriter_register_instance(input_DataWriter, input_message);
 

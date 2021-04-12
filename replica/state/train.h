@@ -6,7 +6,7 @@
 
 #define TRAIN_SPEED 1  // Train speed in m/s
 #define TRAIN_DELECERATION 0.4
-#define MAX_POS_INACCURACY 0.1
+#define MAX_POS_INACCURACY 0.2
 
 typedef struct {
     double min_position;

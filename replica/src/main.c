@@ -25,6 +25,16 @@ void perform_voting(RevPiDDS_Input* balise_telegram, const replica_result_t* res
 
     printf("Got new voting material\n");
 
+    if (length > 0) {
+        if (results[0].should_break) {
+            train_state_t train_state;
+            bool has_state = get_train_state(&train_state);
+            if (has_state) {
+                evaluator_train_stopped(train_state.position.position, results[0].reason);
+            }
+        }
+    }
+
     if (this_replica->role != LEADER) {
         printf("Got new voting material but not leader anymore\n");
         return;
@@ -107,6 +117,8 @@ void main_loop() {
                         } else if (data._buffer[0] == MOVEMENT_AUTHORITY_RBC_ID) {
                             if(!parse_and_set_movement_authority(data)) {
                                 printf("Error while parsing and setting MA data\n");
+                            } else {
+                                evaluator_start_new_jouney();
                             }
                         } else if (data._buffer[0] == BALISE_LINKING_RBC_ID) {
                             if (!set_linked_balises(data)) {

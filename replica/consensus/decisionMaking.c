@@ -30,7 +30,7 @@ bool should_brake(const train_state_t* train_state) {
     return true;
 }
 
-bool decide_should_brake(DDS_sequence_long *data) {
+bool decide_should_brake(DDS_sequence_long *data, enum StoppedReason *reason) {
 
     train_state_t current_state;
     bool has_state = get_train_state(&current_state);
@@ -58,16 +58,25 @@ bool decide_should_brake(DDS_sequence_long *data) {
 
     if (!is_linked) {
         printf("Encountered balise not linked ID: %d\n", processed_balise.ID);;
+        *reason = BALISE_NOT_LINKED;
         return true;
     }
 
 
     if (current_state.position.min_position > linked_balise.position || current_state.position.max_position < linked_balise.position) {
         printf("Decision making: Balise not where expected!!\n");
+        *reason = BALISE_NOT_WHERE_EXPECTED;
         return true;
     }
 
     printf("Everything fine. Calculate braking curve\n");
-    return should_brake(&current_state);
+    
+    if (should_brake(&current_state)) {
+        *reason = END_OF_MA;
+        return true;
+    } else {
+        *reason = NONE;
+        return false;
+    }
 
 }

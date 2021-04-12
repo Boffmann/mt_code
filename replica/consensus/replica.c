@@ -108,14 +108,18 @@ void *runElectionTimer() {
                                 // for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
                                 printf("Got the following entry: ID: %d and data: %d\n", input_ID, entries_Seq._buffer[2]);
                                 // TODO Process
+                                enum StoppedReason reason;
 
-                                bool should_brake = decide_should_brake(&entries_Seq);
+                                bool should_brake = decide_should_brake(&entries_Seq, &reason);
 
                                 appendEntriesReply_message->should_brake = should_brake;
+                                appendEntriesReply_message->reason = reason;
 
                             } else if (input_ID == NO_ENTRIES_ID) {
                                 printf("Got no entries ID\n");
-                                appendEntriesReply_message->should_brake = decide_should_brake(NULL);
+                                enum StoppedReason reason;
+                                appendEntriesReply_message->should_brake = decide_should_brake(NULL, &reason);
+                                appendEntriesReply_message->reason = reason;
                             }
 
                             status = RevPiDDS_AppendEntriesReplyDataWriter_write(appendEntriesReply_DataWriter, appendEntriesReply_message, DDS_HANDLE_NIL);
@@ -339,9 +343,9 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
     reply.term = this_replica->current_term;
     // reply.should_break = decide_should_brake(handle->data._buffer + 2, handle->data._buffer[1]);
     if (handle != NULL) {
-        reply.should_break = decide_should_brake(&handle->data);
+        reply.should_break = decide_should_brake(&handle->data, &reply.reason);
     } else {
-        reply.should_break = decide_should_brake(NULL);
+        reply.should_break = decide_should_brake(NULL, &reply.reason);
     }
     replies[num_replies] = reply;
     num_replies++;

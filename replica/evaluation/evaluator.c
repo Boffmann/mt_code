@@ -59,3 +59,23 @@ void evaluator_got_new_leader(const uint8_t id, const uint32_t term) {
 
     fclose(time_until_leader_elected_FILE);
 }
+
+void evaluator_start_new_jouney() {
+    scenario_evaluation_FILE = fopen("scenario_evaluation.yml", "w");
+
+    fclose(scenario_evaluation_FILE);
+
+}
+
+void evaluator_train_stopped(const double stopped_position, enum StoppedReason reason) {
+    scenario_evaluation_FILE = fopen("scenario_evaluation.yml", "a");
+
+    if (scenario_evaluation_FILE == NULL) {
+        printf("Could not open file for scenario evaluation");
+    } else {
+
+        fprintf(scenario_evaluation_FILE, "%lf;%d\n", stopped_position, reason);
+    }
+
+    fclose(scenario_evaluation_FILE);
+}

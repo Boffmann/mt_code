@@ -12,7 +12,6 @@ set(datamodel_lib datamodel)
 
 set(include_path 
   "${CMAKE_CURRENT_SOURCE_DIR}"
-  "${CMAKE_SOURCE_DIR}"
 )
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 set(State_lib state)

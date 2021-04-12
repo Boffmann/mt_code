@@ -6,4 +6,13 @@ module RevPiDDS {
   };
   #pragma keylist Input id
 
+  struct TrainState {
+    double position;
+    double max_position;
+    double min_position;
+    float speed;
+    unsigned long long lastUpdateTime;
+  };
+  #pragma keylist TrainState
+
 };

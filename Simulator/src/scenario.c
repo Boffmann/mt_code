@@ -35,9 +35,7 @@ void replace_newline_with_spaces(char* str) {
     }
 }
 
-void create_scenario_from(const char* scenario_path, scenario_t* scenario) {
-
-    (void) scenario_path;
+bool create_scenario_from(const char* scenario_path, scenario_t* scenario) {
     
     jsmn_parser parser;
     jsmntok_t tokens[128];
@@ -54,7 +52,7 @@ void create_scenario_from(const char* scenario_path, scenario_t* scenario) {
 
     if (scenario_file == NULL) {
         printf("File not found: %s\n", scenario_path);
-        return;
+        return false;
     }
 
     while (fgets(line, sizeof(line), scenario_file) != NULL) {
@@ -87,11 +85,11 @@ void create_scenario_from(const char* scenario_path, scenario_t* scenario) {
                 if (strcmp(str, "start") == 0) {
                     t = &tokens[++i];
                     str = json_token_tostr(content, t);
-                    scenario->movement_authority.start_pos = atoi(str);
+                    scenario->movement_authority.start_position = atoi(str);
                 } else if (strcmp(str, "end") == 0) {
                     t = &tokens[++i];
                     str = json_token_tostr(content, t);
-                    scenario->movement_authority.end_pos = atoi(str);
+                    scenario->movement_authority.end_position = atoi(str);
                 } else {
                     printf("ERROR MA\n");
                 }
@@ -133,6 +131,8 @@ void create_scenario_from(const char* scenario_path, scenario_t* scenario) {
 
         }
     }
+
+    return true;
 }
 
 void scenario_cleanup(scenario_t *scenario) {

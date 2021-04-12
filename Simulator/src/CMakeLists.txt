@@ -18,6 +18,7 @@ set(target RevPiTrainSimulator)
 set(include_path 
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../jsmn"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../replica/state"
 )
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 set(generated_path "${CMAKE_BINARY_DIR}/gen")
@@ -57,8 +58,11 @@ target_include_directories(${target}
 # Libraries
 #
 
+find_library(State_lib state HINTS ../../replica/build)
+
 target_link_libraries(${target}
   PRIVATE
   ${OSPL_LINK_LIBS}
+  ${State_lib}
   ${datamodel_lib}
 )

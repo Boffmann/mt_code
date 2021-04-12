@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <sys/time.h>
 
+#include "evaluation/evaluator.h"
+
 #include "dds_dcps.h"
 
 #include "datamodel.h"
@@ -25,6 +27,7 @@ typedef struct {
     uint32_t replica_id;
     uint32_t term;          // The term in which this result was generated
     bool should_break;
+    enum StoppedReason reason;
 } replica_result_t;
 
 /**
