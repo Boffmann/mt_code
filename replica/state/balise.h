@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "datamodelDcps.h"
+
 typedef struct {
 
     uint8_t ID;
@@ -13,6 +15,7 @@ typedef struct {
 
 bool get_balise_if_linked(const uint8_t ID, balise_t* balise);
 
+bool set_linked_balises(const DDS_sequence_long input_data);
 void add_linked_balise(const balise_t* balise);
 
 #endif

@@ -6,11 +6,11 @@ module RevPiDDS {
   };
   #pragma keylist Input id
   
+  // TODO id could be key
   struct AppendEntries {
     long term;
     long senderID;
-    long id;
-    // TODO die anderen replicas können auch direkt aus dem Input topic lesen
+    long inputID;
     sequence<long> entries;
   };
   #pragma keylist AppendEntries term
@@ -20,6 +20,7 @@ module RevPiDDS {
     long id;
     long term;
     boolean success;
+    boolean should_brake;
   };
   #pragma keylist AppendEntriesReply
 

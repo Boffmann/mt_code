@@ -15,6 +15,21 @@ void set_movement_authority(const movement_authority_t* ma) {
     DDS_free(movementAuthority_message);
 }
 
+bool parse_and_set_movement_authority(const DDS_sequence_long input_data) {
+    movement_authority_t ma;
+
+    if (input_data._buffer[1] != 2) {
+        return false;
+    }
+
+    ma.start_position = input_data._buffer[2];
+    ma.end_position = input_data._buffer[3];
+
+    set_movement_authority(&ma);
+
+    return true;
+}
+
 bool get_movement_authority(movement_authority_t* ma) {
     DDS_ReturnCode_t status;
     DDS_sequence_RevPiDDS_MovementAuthority msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};

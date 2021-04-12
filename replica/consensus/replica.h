@@ -16,6 +16,9 @@
 #define NUM_SPARES 1
 #define LOG_PUFFER 5
 
+#define NO_ENTRIES_ID 0
+#define HEARTBEAT_ID 1
+
 /**
  * Data structure that encodes a replica's decision to a log entry
  */

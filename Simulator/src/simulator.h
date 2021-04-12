@@ -13,7 +13,7 @@ void simulator_init();
 
 void send_linking_information(balise_array_t* linked_balises);
 
-void send_movement_authority(scenario_t* scenario);
+void send_movement_authority(const scenario_t* const scenario);
 
 void send_balise(const balise_t* const balise);
 void send_terminate();

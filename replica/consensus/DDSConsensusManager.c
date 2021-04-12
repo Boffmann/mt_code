@@ -1,6 +1,8 @@
 #include "DDSConsensusManager.h"
 #include "datamodel.h"
 
+#include "replica.h"
+
 void createAppendEntriesTopic();
 void createAppendEntriesReplyTopic();
 void createRequestVoteTopic();
@@ -29,8 +31,14 @@ void DDSConsensusCleanup() {
     checkStatus(g_status, "DDS_WaitSet_detach_condition (collectVotes_Waitset/requestVote_ReadCondition)");
     g_status = DDS_WaitSet_detach_condition(collectVotes_WaitSet, requestVoteReply_ReadCondition);
     checkStatus(g_status, "DDS_WaitSet_detach_condition (collectVotes_WaitSet/requestVoteReply_ReadCondition)");
-    g_status = DDS_WaitSet_detach_condition(activateSpare_WaitSet, activateSpare_ReadCondition);
-    checkStatus(g_status, "DDS_WaitSet_detach_condition (activateSpare_WaitSet/activateSpare_ReadCondition)");
+
+    if (this_replica->ID >= ACTIVE_REPLICAS) {
+        g_status = DDS_WaitSet_detach_condition(activateSpare_WaitSet, activateSpare_ReadCondition);
+        checkStatus(g_status, "DDS_WaitSet_detach_condition (activateSpare_WaitSet/activateSpare_ReadCondition)");
+
+        g_status = RevPiDDS_RequestVoteReplyDataReader_delete_readcondition(activateSpare_DataReader, activateSpare_ReadCondition);
+        checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (activateSpare)");
+    }
 
     g_status = RevPiDDS_AppendEntriesDataReader_delete_readcondition(appendEntries_DataReader, electionTimer_ReadCondition);
     checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (electionTimer)");
@@ -40,8 +48,6 @@ void DDSConsensusCleanup() {
     checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (requestVoteReply)");
     g_status = RevPiDDS_RequestVoteReplyDataReader_delete_readcondition(appendEntriesReply_DataReader, appendEntriesReply_ReadCondition);
     checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (requestVoteReply)");
-    g_status = RevPiDDS_RequestVoteReplyDataReader_delete_readcondition(activateSpare_DataReader, activateSpare_ReadCondition);
-    checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (activateSpare)");
 
     deleteDataReader(appendEntries_Subscriber, appendEntries_DataReader);
     deleteDataReader(requestVote_Subscriber, requestVote_DataReader);
@@ -203,6 +209,7 @@ void createAppendEntriesReplyTopic() {
     // TODO
     topicQos->destination_order.kind = DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
     topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
+    topicQos->lifespan.duration = (DDS_Duration_t){1, 0};
     topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     topicQos->history.depth = 5;
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
@@ -491,11 +498,11 @@ void createActivateSpareTopic() {
     topicQos->destination_order.kind = DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
     topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
     topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
-    topicQos->history.depth = 5;
+    topicQos->history.depth = 1;
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    topicQos->resource_limits.max_samples = 5;
-    topicQos->resource_limits.max_instances = 5;
-    topicQos->resource_limits.max_samples_per_instance = 5;
+    topicQos->resource_limits.max_samples = 1;
+    topicQos->resource_limits.max_instances = 1;
+    topicQos->resource_limits.max_samples_per_instance = 1;
 
     // Create the Topic's in the DDS Domain.
     typeName = RevPiDDS_ActivateSpareTypeSupport_get_type_name(typeSupport);
@@ -525,37 +532,55 @@ void createActivateSpareTopic() {
 
     activateSpare_DataWriter = createDataWriter(activateSpare_Publisher, activateSpare_Topic, dataWriterQos);
 
-    subscriberQos = DDS_SubscriberQos__alloc();
-    checkHandle(subscriberQos, "DDS_SubscriberQos__alloc");
+    if (this_replica->ID >= ACTIVE_REPLICAS) {
+        subscriberQos = DDS_SubscriberQos__alloc();
+        checkHandle(subscriberQos, "DDS_SubscriberQos__alloc");
 
-    status = DDS_DomainParticipant_get_default_subscriber_qos(domainParticipant, subscriberQos);
-    checkStatus(status, "DDS_DomainParticipant_get_default_subscriber_qos");
-    subscriberQos->partition.name._length = 1;
-    subscriberQos->partition.name._maximum = 1;
-    subscriberQos->partition.name._release = TRUE;
-    subscriberQos->partition.name._buffer = DDS_StringSeq_allocbuf(1);
-    checkHandle(subscriberQos->partition.name._buffer, "DDS_StringSeq_allocbuf");
-    subscriberQos->partition.name._buffer[0] = DDS_string_dup(g_partitionName);
-    checkHandle(subscriberQos->partition.name._buffer[0], "DDS_string_dup");
+        status = DDS_DomainParticipant_get_default_subscriber_qos(domainParticipant, subscriberQos);
+        checkStatus(status, "DDS_DomainParticipant_get_default_subscriber_qos");
+        subscriberQos->partition.name._length = 1;
+        subscriberQos->partition.name._maximum = 1;
+        subscriberQos->partition.name._release = TRUE;
+        subscriberQos->partition.name._buffer = DDS_StringSeq_allocbuf(1);
+        checkHandle(subscriberQos->partition.name._buffer, "DDS_StringSeq_allocbuf");
+        subscriberQos->partition.name._buffer[0] = DDS_string_dup(g_partitionName);
+        checkHandle(subscriberQos->partition.name._buffer[0], "DDS_string_dup");
 
-    activateSpare_Subscriber = createSubscriber(domainParticipant, subscriberQos);
+        activateSpare_Subscriber = createSubscriber(domainParticipant, subscriberQos);
 
-    dataReaderQos = DDS_DataReaderQos__alloc();
-    checkHandle(dataReaderQos, "DDS_DataReaderQos__alloc");
-    status = DDS_Subscriber_get_default_datareader_qos(activateSpare_Subscriber, dataReaderQos);
-    checkStatus(status, "DDS_Subscriber_get_default_datareader_qos (ActivateSparec)");
-    status = DDS_Subscriber_copy_from_topic_qos(activateSpare_Subscriber, dataReaderQos, topicQos);
-    checkStatus(status, "DDS_Publisher_copy_from_topic_qos");
+        dataReaderQos = DDS_DataReaderQos__alloc();
+        checkHandle(dataReaderQos, "DDS_DataReaderQos__alloc");
+        status = DDS_Subscriber_get_default_datareader_qos(activateSpare_Subscriber, dataReaderQos);
+        checkStatus(status, "DDS_Subscriber_get_default_datareader_qos (ActivateSparec)");
+        status = DDS_Subscriber_copy_from_topic_qos(activateSpare_Subscriber, dataReaderQos, topicQos);
+        checkStatus(status, "DDS_Publisher_copy_from_topic_qos");
 
-    activateSpare_DataReader = createDataReader(activateSpare_Subscriber, activateSpare_Topic, dataReaderQos);
+        activateSpare_DataReader = createDataReader(activateSpare_Subscriber, activateSpare_Topic, dataReaderQos);
+
+        activateSpare_WaitSet = DDS_WaitSet__alloc();
+        checkHandle(collectVotes_WaitSet, "DDS_WaitSet__alloc activateSpare");
+
+        activateSpare_ReadCondition = RevPiDDS_InputDataReader_create_readcondition(
+            activateSpare_DataReader,
+            DDS_NOT_READ_SAMPLE_STATE,
+            DDS_NEW_VIEW_STATE | DDS_NOT_NEW_VIEW_STATE,
+            DDS_ALIVE_INSTANCE_STATE
+        );
+        checkHandle(activateSpare_ReadCondition, "DDS_DataReader_create_readcondition (activateSpare)");
+
+        g_status = DDS_WaitSet_attach_condition(activateSpare_WaitSet, activateSpare_ReadCondition);
+        checkStatus(g_status, "DDS_WaitSet_attach_condition (activateSpare_ReadCondition)");
+
+        DDS_free(dataReaderQos);
+        DDS_free(subscriberQos);
+    }
+
 
     DDS_free(topicQos);
     DDS_free(dataWriterQos);
-    DDS_free(dataReaderQos);
     DDS_free(typeName);
     DDS_free(typeSupport);
     DDS_free(publisherQos);
-    DDS_free(subscriberQos);
 
 }
 
@@ -572,9 +597,6 @@ void createLeaderElectionDDSFeatures() {
 
     collectVotes_WaitSet = DDS_WaitSet__alloc();
     checkHandle(collectVotes_WaitSet, "DDS_WaitSet__alloc requestVote");
-
-    activateSpare_WaitSet = DDS_WaitSet__alloc();
-    checkHandle(collectVotes_WaitSet, "DDS_WaitSet__alloc activateSpare");
 
     collectVotes_GuardList = DDS_ConditionSeq__alloc();
     checkHandle(collectVotes_GuardList, "DDS_ConditionSeq__alloc");
@@ -648,15 +670,6 @@ void createLeaderElectionDDSFeatures() {
     );
     checkHandle(appendEntriesReply_ReadCondition, "DDS_DataReader_create_readcondition (appendEntriesReply)");
 
-    activateSpare_ReadCondition = RevPiDDS_InputDataReader_create_readcondition(
-        activateSpare_DataReader,
-        DDS_NOT_READ_SAMPLE_STATE,
-        DDS_NEW_VIEW_STATE | DDS_NOT_NEW_VIEW_STATE,
-        DDS_ALIVE_INSTANCE_STATE
-    );
-    checkHandle(activateSpare_ReadCondition, "DDS_DataReader_create_readcondition (activateSpare)");
-
-
     g_status = DDS_WaitSet_attach_condition(collectVotes_WaitSet, requestVote_ReadCondition);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (requestVote_ReadCondition)");
     g_status = DDS_WaitSet_attach_condition(collectVotes_WaitSet, requestVoteReply_ReadCondition);
@@ -667,7 +680,5 @@ void createLeaderElectionDDSFeatures() {
     checkStatus(g_status, "DDS_WaitSet_attach_condition (appendEntries_ReadCondition)");
     g_status = DDS_WaitSet_attach_condition(appendEntriesReply_WaitSet, appendEntriesReply_ReadCondition);
     checkStatus(g_status, "DDS_WaitSet_attach_condition (appendEntriesReply_ReadCondition)");
-    g_status = DDS_WaitSet_attach_condition(activateSpare_WaitSet, activateSpare_ReadCondition);
-    checkStatus(g_status, "DDS_WaitSet_attach_condition (activateSpare_ReadCondition)");
 
 }

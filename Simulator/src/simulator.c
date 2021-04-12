@@ -6,7 +6,7 @@
 #include "DDSEntitiesCreator.h"
 
 DDS_DomainParticipant domainParticipant = DDS_OBJECT_NIL;
-uint32_t inputID = 0;
+uint32_t inputID = 2;
 
 DDS_Topic inputTopic;
 DDS_Publisher input_Publisher;
@@ -84,9 +84,9 @@ void simulator_init() {
 }
 
 
-void send_movement_authority(scenario_t* scenario) {
+void send_movement_authority(const scenario_t* const scenario) {
 
-    // (void)scenario;
+    (void)scenario;
     RevPiDDS_Input* input_message = DDS_OBJECT_NIL;
     DDS_ReturnCode_t status;
     DDS_InstanceHandle_t test_instance;
@@ -106,12 +106,14 @@ void send_movement_authority(scenario_t* scenario) {
 
     test_instance = RevPiDDS_InputDataWriter_register_instance(input_DataWriter, input_message);
 
+    (void) test_instance;
+
     status = RevPiDDS_InputDataWriter_write(input_DataWriter, input_message, test_instance);
     checkStatus(status, "RevPiDDS_InputDataWriter_write");
 
-    // TODO Autodispose unregistered off
-    // status = RevPiDDS_InputDataWriter_unregister_instance(input_DataWriter, input_message, test_instance);
-    // checkStatus(status, "RevPiDDS_InputDataWriter_unregister_instance");
+    // // TODO Autodispose unregistered off
+    // // status = RevPiDDS_InputDataWriter_unregister_instance(input_DataWriter, input_message, test_instance);
+    // // checkStatus(status, "RevPiDDS_InputDataWriter_unregister_instance");
 
     inputID++;
 
@@ -125,6 +127,9 @@ void send_linking_information(balise_array_t* linked_balises) {
     DDS_InstanceHandle_t test_instance;
     uint8_t payload_size;
 
+    printf("The first linked balises position: %d\n", linked_balises->array[0].position);
+    printf("The second linked balises position: %d\n", linked_balises->array[1].position);
+
     payload_size = 2 + linked_balises->used * 2;
     input_message = RevPiDDS_Input__alloc();
     input_message->id = inputID;
@@ -137,6 +142,7 @@ void send_linking_information(balise_array_t* linked_balises) {
 
     for (size_t i = 0; i < linked_balises->used; ++i) {
         size_t index = 2 * i + 2;
+        printf("Sending linked balise with id %d and position %d\n", linked_balises->array[i].id, linked_balises->array[i].position);
         input_message->data._buffer[index] = linked_balises->array[i].id;
         input_message->data._buffer[index + 1] = linked_balises->array[i].position;
     }
@@ -171,7 +177,7 @@ void send_balise(const balise_t* const balise) {
     input_message->data._buffer = DDS_sequence_long_allocbuf(payload_size);
 
     input_message->data._buffer[0] = 3;
-    input_message->data._buffer[1] = 2;
+    input_message->data._buffer[1] = 1;
     input_message->data._buffer[2] = balise->id;
     // input_message->data._buffer[3] = balise->position;
 

@@ -11,9 +11,11 @@
 #include "state/DDSStateManager.h"
 #include "leaderElection.h"
 #include "spare.h"
+#include "decisionMaking.h"
 
 #include "evaluation/evaluator.h"
 
+uint8_t num_received_ae = 1;
 
 void *runElectionTimer() {
 
@@ -21,6 +23,7 @@ void *runElectionTimer() {
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_ReturnCode_t status;
     uint32_t received_Term = 0;
+    uint32_t input_ID;
     uint8_t sender_ID;
     DDS_sequence_long entries_Seq;
     RevPiDDS_AppendEntriesReply* appendEntriesReply_message;
@@ -64,6 +67,7 @@ void *runElectionTimer() {
                         received_Term = msgSeq._buffer[i].term;
                         entries_Seq = msgSeq._buffer[i].entries;
                         sender_ID = msgSeq._buffer[i].senderID;
+                        input_ID = msgSeq._buffer[i].inputID;
 
                         if (sender_ID == this_replica->ID) {
                             continue;
@@ -82,9 +86,8 @@ void *runElectionTimer() {
 
                             success = true;
                         }
-                        if (entries_Seq._length > 0) {
-                            printf("Got some new entries\n");
-                            uint32_t id = msgSeq._buffer[i].id;
+
+                        if (input_ID != HEARTBEAT_ID) {
 
                             if (this_replica->ID >= ACTIVE_REPLICAS) {
                                 bool is_active = activate_when_promted();
@@ -92,23 +95,36 @@ void *runElectionTimer() {
                                     break;
                                 }
                             }
-                            // for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
-                            printf("Got the following entry: ID: %d and data: %d\n", id, entries_Seq._buffer[2]);
-                            // TODO Process
 
                             appendEntriesReply_message = RevPiDDS_AppendEntriesReply__alloc();
-                            appendEntriesReply_message->id = id;
                             appendEntriesReply_message->senderID = this_replica->ID;
                             appendEntriesReply_message->term = this_replica->current_term;
                             appendEntriesReply_message->success = success;
+                            appendEntriesReply_message->id = input_ID;
+
+                            if (entries_Seq._length > 0) {
+                                printf("Got some new entries\n");
+
+                                // for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
+                                printf("Got the following entry: ID: %d and data: %d\n", input_ID, entries_Seq._buffer[2]);
+                                // TODO Process
+
+                                bool should_brake = decide_should_brake(&entries_Seq);
+
+                                appendEntriesReply_message->should_brake = should_brake;
+
+                            } else if (input_ID == NO_ENTRIES_ID) {
+                                printf("Got no entries ID\n");
+                                appendEntriesReply_message->should_brake = decide_should_brake(NULL);
+                            }
 
                             status = RevPiDDS_AppendEntriesReplyDataWriter_write(appendEntriesReply_DataWriter, appendEntriesReply_message, DDS_HANDLE_NIL);
                             checkStatus(status, "RevPiDDS_AppendEntriesReplyDataWriter write AppendEntriesReply");
                             DDS_free(appendEntriesReply_message);
-                            // }
                         }
+
                     }
-                    printf("Election Timer received with term %d\n", this_replica->current_term);
+                    printf("Election Timer received with term %d Num %d\n", this_replica->current_term, num_received_ae++);
                 }
             } else {
                 printf("Waitset election timer triggered again but DR is completely empty\n");
@@ -162,10 +178,11 @@ void *send_heartbeat() {
         appendEntries_message = RevPiDDS_AppendEntries__alloc();
         appendEntries_message->term = this_replica->current_term;
         appendEntries_message->senderID = this_replica->ID;
+        appendEntries_message->inputID = HEARTBEAT_ID;
 
         printf("About to send heartbeat with term %d\n", appendEntries_message->term);
         status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
-        checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message");
+        checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message (heartbeat)");
 
         movement_authority_t current_ma;
         train_state_t current_state;
@@ -237,9 +254,6 @@ void become_spare() {
 
 void initialize_replica(const uint8_t id) {
 
-    DDSSetupConsensus();
-    createLeaderElectionDDSFeatures(id);
-    DDSSetupState();
 
     srand(time(NULL));
     DDS_unsigned_long id_dependent_timeout_sec = 0;
@@ -255,6 +269,10 @@ void initialize_replica(const uint8_t id) {
     this_replica = malloc(sizeof(replica_t));
 
     this_replica->ID = id;
+
+    DDSSetupConsensus();
+    createLeaderElectionDDSFeatures();
+    DDSSetupState();
 
     this_replica->heartbeat_timeout.tv_sec = 0;
     this_replica->heartbeat_timeout.tv_nsec = 500000000;
@@ -293,36 +311,40 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
     uint32_t reply_ID;
     uint8_t sender_ID;
     bool success = false;
+    bool should_brake = true;
     uint8_t num_replies = 0;
     uint8_t num_timeouts = 0;
     replica_result_t replies[ACTIVE_REPLICAS + NUM_SPARES];
     // Minimal number of available results to get a majority in the cluster
     uint8_t min_required_results = (uint8_t)(floor((double) ACTIVE_REPLICAS / 2.0)) + 1;
     DDS_Duration_t timeout = {0 , (long)500000000 / min_required_results};
-    uint32_t input_ID = handle->id;
-
+    uint32_t input_ID = NO_ENTRIES_ID;
 
     appendEntries_message = RevPiDDS_AppendEntries__alloc();
     appendEntries_message->senderID = this_replica->ID;
     appendEntries_message->term = this_replica->current_term;
-    appendEntries_message->id = input_ID;
-    // uint8_t payload_size = 1;
-    appendEntries_message->entries = handle->data;
-    // appendEntries_message->entries._length = payload_size;
-    // appendEntries_message->entries._maximum = payload_size;
-    // appendEntries_message->entries._buffer = DDS_sequence_char_allocbuf(payload_size);
-    // appendEntries_message->entries._buffer = handle->data._buffer;
+
+    if (handle != NULL) {
+        input_ID = handle->id;
+        appendEntries_message->entries = handle->data;
+    }
+
+    appendEntries_message->inputID = input_ID;
+
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
-    checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message");
+    checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message (cluster Process)");
 
     replica_result_t reply;
     reply.replica_id = this_replica->ID;
     reply.term = this_replica->current_term;
+    // reply.should_break = decide_should_brake(handle->data._buffer + 2, handle->data._buffer[1]);
+    if (handle != NULL) {
+        reply.should_break = decide_should_brake(&handle->data);
+    } else {
+        reply.should_break = decide_should_brake(NULL);
+    }
     replies[num_replies] = reply;
     num_replies++;
-
-    // TODO Wait until enough data is ready.
-    // If timeouts, see how many data there is. When arrived data is sufficient, call "on_result", if not call "on_fail"
 
     while (true) {
         status = DDS_WaitSet_wait(appendEntriesReply_WaitSet, appendEntriesReply_GuardList, &timeout);
@@ -346,6 +368,7 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
                         sender_ID = msgSeq._buffer[i].senderID;
                         reply_ID = msgSeq._buffer[i].id;
                         success = msgSeq._buffer[i].success;
+                        should_brake = msgSeq._buffer[i].should_brake;
 
                         if (sender_ID == this_replica->ID) {
                             continue;
@@ -356,6 +379,7 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
                             replica_result_t reply;
                             reply.replica_id = sender_ID;
                             reply.term = received_Term;
+                            reply.should_break = should_brake;
                             replies[num_replies] = reply;
                             num_replies++;
                         }

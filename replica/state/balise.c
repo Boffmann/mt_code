@@ -7,7 +7,7 @@ bool get_balise_if_linked(const uint8_t ID, balise_t* balise) {
     DDS_ReturnCode_t status;
     DDS_sequence_RevPiDDS_LinkedBalises msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
-    uint8_t balise_group_id;
+    uint8_t balise_id;
 
     status = RevPiDDS_LinkedBalisesDataReader_read (
         linkedBalises_DataReader,
@@ -23,10 +23,12 @@ bool get_balise_if_linked(const uint8_t ID, balise_t* balise) {
     if (msgSeq._length > 0) {
         for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
             if (infoSeq._buffer[i].valid_data) {
-                balise_group_id = msgSeq._buffer[i].ID;
+                balise_id = msgSeq._buffer[i].ID;
+                printf("Found this balise in linked list: ID: %d Position: %d\n", balise_id, msgSeq._buffer[i].position);
 
-                if (balise_group_id == ID) {
-                    balise->ID = balise_group_id;
+                if (balise_id == ID) {
+                    printf("The balise with ID %d is linked\n", balise_id);
+                    balise->ID = balise_id;
                     balise->position = msgSeq._buffer[i].position;
                     return true;
                 }
@@ -35,6 +37,23 @@ bool get_balise_if_linked(const uint8_t ID, balise_t* balise) {
     }
 
     return false;
+}
+
+bool set_linked_balises(const DDS_sequence_long input_data) {
+
+    if (input_data._buffer[1] % 2 != 0) {
+        return false;
+    }
+    int num_linked_balises = input_data._buffer[1] / 2;
+    for (int i = 0; i < num_linked_balises; ++i) {
+        balise_t balise;
+        balise.ID = input_data._buffer[2 + 2 * i];
+        balise.position = input_data._buffer[2 + 2 * i + 1];
+        printf("Add a balise %d\n", balise.ID);
+        add_linked_balise(&balise);
+    }
+
+    return true;
 }
 
 void add_linked_balise(const balise_t* balise) {

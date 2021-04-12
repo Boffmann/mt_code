@@ -33,14 +33,14 @@ int main(int argc, char *argv[]) {
 
     setup();
 
-    balise_array_t* linked_balises = scenario_get_linked_balises(&scenario);
-
-    printf("The scenario has %ld linked balises\n", linked_balises->used);
-    printf("The first linked balises position: %d\n", linked_balises->array[0].position);
-
-
     sleep(1);
     send_movement_authority(&scenario);
+
+    balise_array_t* linked_balises = scenario_get_linked_balises(&scenario);
+    printf("The scenario has %ld linked balises\n", linked_balises->used);
+    printf("The first linked balises position: %d\n", linked_balises->array[0].position);
+    printf("The second linked balises position: %d\n", linked_balises->array[1].position);
+
     send_linking_information(linked_balises);
 
     struct timeval time_started;

@@ -11,13 +11,15 @@
 #include "state/train.h"
 #include "datamodel.h"
 #include "evaluation/evaluator.h"
+#include "consensus/decisionMaking.h"
 
+#define STOP_TRAIN_ID 0
 #define MOVEMENT_AUTHORITY_RBC_ID 1
 #define BALISE_LINKING_RBC_ID 2
 
 replica_t *this_replica;
 
-void perform_voting(RevPiDDS_Input* input, const replica_result_t* results, const size_t length) {
+void perform_voting(RevPiDDS_Input* balise_telegram, const replica_result_t* results, const size_t length) {
 
     DDS_ReturnCode_t status;
 
@@ -28,13 +30,10 @@ void perform_voting(RevPiDDS_Input* input, const replica_result_t* results, cons
         return;
     }
 
-    // TODO Do this only when should not breaking
-
-    if (input != NULL) {
+    if (balise_telegram != NULL && !results->should_break) {
 
         balise_t referenced_balise;
-        printf("Data::::: %d\n", input->data._buffer[2]);
-        bool is_linked = get_balise_if_linked(input->data._buffer[2], &referenced_balise);
+        bool is_linked = get_balise_if_linked(balise_telegram->data._buffer[2], &referenced_balise);
         if (is_linked) {
             set_train_position(referenced_balise.position);
         }
@@ -51,12 +50,15 @@ void perform_voting(RevPiDDS_Input* input, const replica_result_t* results, cons
             continue;
         }
 
-        DDS_InstanceHandle_t handle = DDS_Entity_get_instance_handle(input);
-        status = RevPiDDS_InputDataWriter_dispose(
-            input_DataWriter,
-            input,
-            handle);
-        checkStatus(status, "Input_DataWriter Dispose input");
+        if (balise_telegram != NULL) {
+            DDS_InstanceHandle_t handle = DDS_Entity_get_instance_handle(balise_telegram);
+            status = RevPiDDS_InputDataWriter_dispose(
+                input_DataWriter,
+                balise_telegram,
+                handle);
+            checkStatus(status, "Input_DataWriter Dispose input");
+        }
+
     }
 
 }
@@ -65,31 +67,13 @@ void on_no_results(void) {
     printf("Failed to deliver!!!!!\n");
 }
 
-int main(int argc, char *argv[]) {
-
-    if (argc < 2) {
-        printf("Usage: %s [replicaID]\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
-
-    initialize_evaluator();
-
-    uint8_t replica_ID = (uint8_t)atoi(argv[1]);
-
+void main_loop() {
+    bool running = true;
     DDS_ReturnCode_t status;
     unsigned long i = 0;
     DDS_sequence_RevPiDDS_Input* message_seq = DDS_sequence_RevPiDDS_Input__alloc();
     DDS_SampleInfoSeq* message_infoSeq = DDS_SampleInfoSeq__alloc();
-    DDS_Duration_t input_Timeout = DDS_DURATION_INFINITE;
-    bool running = true;
-
-    DDSSetup();
-    // uint8_t message = 0;
-
-    initialize_replica(replica_ID);
-
-    status = DDS_WaitSet_attach_condition(input_WaitSet, input_ReadCondition);
-    checkStatus(status, "DDS_WaitSet_attach_condition (input_ReadCondition)");
+    DDS_Duration_t input_Timeout = {1 , 0};
 
     while (running) {
         status = DDS_WaitSet_wait(input_WaitSet, input_GuardList, &input_Timeout);
@@ -98,8 +82,8 @@ int main(int argc, char *argv[]) {
             pthread_mutex_unlock(&this_replica->consensus_mutex);
             continue;
         }
-        printf("Input waitSet triggered\n");
         if (status == DDS_RETCODE_OK) {
+            printf("Input waitSet triggered\n");
 
             status = RevPiDDS_InputDataReader_take_w_condition(
                     input_DataReader,
@@ -116,39 +100,23 @@ int main(int argc, char *argv[]) {
                         printf("\n    Message : \"%d\"\n", message_seq->_buffer[i].id);
 
                         DDS_sequence_long data = message_seq->_buffer[i].data;
-                        if (data._buffer[0] == 0) {
-                            running = false;
-                            break;
+                        if (data._buffer[0] == STOP_TRAIN_ID) {
+                            DDS_free(message_seq);
+                            DDS_free(message_infoSeq);
+                            return;
                         } else if (data._buffer[0] == MOVEMENT_AUTHORITY_RBC_ID) {
-                            if (data._buffer[1] != 2) {
-                                printf("Movement Authority has to less data\n");
-                                continue;
+                            if(!parse_and_set_movement_authority(data)) {
+                                printf("Error while parsing and setting MA data\n");
                             }
-                            movement_authority_t ma;
-                            // TODO Ist unschön, dass man die IDs von den einzelnen dingen im Protokoll wissen muss
-                            ma.start_position = data._buffer[2];
-                            ma.end_position = data._buffer[3];
-
-                            set_movement_authority(&ma);
                         } else if (data._buffer[0] == BALISE_LINKING_RBC_ID) {
-                            if (data._buffer[1] % 2 != 0) {
-                                printf("Linked balises incomplete\n");
-                                continue;
-                            }
-                            int num_linked_balises = data._buffer[1] / 2;
-                            for (int i = 0; i < num_linked_balises; ++i) {
-                                balise_t balise;
-                                balise.ID = data._buffer[2 + 2 * i];
-                                balise.position = data._buffer[2 + 2 * i + 1];
-                                printf("Add a balise %d\n", balise.ID);
-                                add_linked_balise(&balise);
+                            if (!set_linked_balises(data)) {
+                                printf("Error setting linked balises\n");
                             }
                         } else {
                             pthread_mutex_unlock(&this_replica->consensus_mutex);
                             cluster_process(&message_seq->_buffer[i], &perform_voting, &on_no_results);
                             pthread_mutex_lock(&this_replica->consensus_mutex);
                         }
-
                     } else {
                         printf("\n    Data is invalid!\n");
                     }
@@ -163,11 +131,43 @@ int main(int argc, char *argv[]) {
             status = RevPiDDS_InputDataReader_return_loan(input_DataReader, message_seq, message_infoSeq);
             checkStatus(status, "RevPiDDS_InputDataReader_return_loan");
 
+        } else if (status == DDS_RETCODE_TIMEOUT) {
+            printf("Calculate braking curve\n");
+            // Emtpy input means only observe speed and braking curve
+            pthread_mutex_unlock(&this_replica->consensus_mutex);
+            cluster_process(NULL, &perform_voting, &on_no_results);
         } else {
             pthread_mutex_unlock(&this_replica->consensus_mutex);
             checkStatus(status, "DDS_WaitSet_wait (Input Waitset)");
         }
     }
+
+    DDS_free(message_seq);
+    DDS_free(message_infoSeq);
+}
+
+int main(int argc, char *argv[]) {
+
+    if (argc < 2) {
+        printf("Usage: %s [replicaID]\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    initialize_evaluator();
+
+    uint8_t replica_ID = (uint8_t)atoi(argv[1]);
+
+    DDS_ReturnCode_t status;
+
+    DDSSetup();
+    // uint8_t message = 0;
+
+    initialize_replica(replica_ID);
+
+    status = DDS_WaitSet_attach_condition(input_WaitSet, input_ReadCondition);
+    checkStatus(status, "DDS_WaitSet_attach_condition (input_ReadCondition)");
+
+    main_loop();
 
     status = DDS_WaitSet_detach_condition(input_WaitSet, input_ReadCondition);
     checkStatus(status, "DDS_WaitSet_detach_condition");
@@ -179,6 +179,4 @@ int main(int argc, char *argv[]) {
 
     teardown_replica();
     DDSCleanup();
-    DDS_free(message_seq);
-    DDS_free(message_infoSeq);
 }
