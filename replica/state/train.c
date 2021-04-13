@@ -5,22 +5,6 @@
 #include "datamodel.h"
 #include "DDSStateManager.h"
 
-// void initialize_train_state(const uint32_t position, const uint32_t speed) {
-//     DDS_ReturnCode_t status;
-//     RevPiDDS_TrainState *initialTrainState_message = RevPiDDS_TrainState__alloc();
-
-//     struct timeval time_now;
-//     gettimeofday(&time_now, NULL);
-//     unsigned long long now_microseconds = time_now.tv_sec * 1000000L + time_now.tv_usec;
-
-//     initialTrainState_message->position = position;
-//     initialTrainState_message->speed = speed;
-//     initialTrainState_message->lastUpdateTime = now_microseconds;
-//     status = RevPiDDS_TrainStateDataWriter_write(trainState_DataWriter, initialTrainState_message, DDS_HANDLE_NIL);
-//     checkStatus(status, "RevPiDDS_TrainStateDataWriter write Initial");
-//     DDS_free(initialTrainState_message);
-// }
-
 void update_train_state() {
     DDS_ReturnCode_t status;
     RevPiDDS_TrainState *newTrainState_message = RevPiDDS_TrainState__alloc();

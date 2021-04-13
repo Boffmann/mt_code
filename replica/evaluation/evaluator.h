@@ -25,6 +25,7 @@ void evaluator_leader_election_started();
 void evaluator_got_new_leader(const uint8_t id, const uint32_t term);
 
 void evaluator_start_new_jouney();
-void evaluator_train_stopped(const double stopped_position, enum StoppedReason reason);
+void evaluator_reached_balise(const double position, int balise_id);
+void evaluator_train_stopped(const double stopped_position, int balise_id, enum StoppedReason reason);
 
 #endif

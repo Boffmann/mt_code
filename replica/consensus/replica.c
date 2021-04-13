@@ -106,11 +106,16 @@ void *runElectionTimer() {
                                 printf("Got some new entries\n");
 
                                 // for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
-                                printf("Got the following entry: ID: %d and data: %d\n", input_ID, entries_Seq._buffer[2]);
+                                printf("Got the following entry: ID: %d and baliseID: %d\n", input_ID, entries_Seq._buffer[0]);
                                 // TODO Process
                                 enum StoppedReason reason;
+                                bool should_brake;
 
-                                bool should_brake = decide_should_brake(&entries_Seq, &reason);
+                                if (entries_Seq._buffer[0] != -1) {
+                                    should_brake = decide_should_brake(true, entries_Seq._buffer[0], &reason);
+                                } else {
+                                    should_brake = decide_should_brake(false, NO_ENTRIES_ID, &reason);
+                                }
 
                                 appendEntriesReply_message->should_brake = should_brake;
                                 appendEntriesReply_message->reason = reason;
@@ -118,7 +123,7 @@ void *runElectionTimer() {
                             } else if (input_ID == NO_ENTRIES_ID) {
                                 printf("Got no entries ID\n");
                                 enum StoppedReason reason;
-                                appendEntriesReply_message->should_brake = decide_should_brake(NULL, &reason);
+                                appendEntriesReply_message->should_brake = decide_should_brake(false, NO_ENTRIES_ID, &reason);
                                 appendEntriesReply_message->reason = reason;
                             }
 
@@ -163,10 +168,6 @@ void *runElectionTimer() {
 }
 
 
-// void send_heartbeat(int signum, siginfo_t* info, void* args) {
-    // (void) signum;
-    // (void) info;
-    // (void) args;
 void *send_heartbeat() {
 
     DDS_ReturnCode_t status;
@@ -305,7 +306,7 @@ void initialize_replica(const uint8_t id) {
 
 }
 
-void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* handle, const replica_result_t* result, const size_t length), void(*on_fail)(void)) {
+void cluster_process(const uint32_t inputID, const int baliseID, void(*on_result)(const uint32_t inputID, const int baliseID, const replica_result_t* result, const size_t length), void(*on_fail)(void)) {
 
     RevPiDDS_AppendEntries* appendEntries_message;
     DDS_sequence_RevPiDDS_AppendEntriesReply msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
@@ -316,24 +317,24 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
     uint8_t sender_ID;
     bool success = false;
     bool should_brake = true;
+    int reason = 0;
     uint8_t num_replies = 0;
     uint8_t num_timeouts = 0;
     replica_result_t replies[ACTIVE_REPLICAS + NUM_SPARES];
     // Minimal number of available results to get a majority in the cluster
     uint8_t min_required_results = (uint8_t)(floor((double) ACTIVE_REPLICAS / 2.0)) + 1;
     DDS_Duration_t timeout = {0 , (long)500000000 / min_required_results};
-    uint32_t input_ID = NO_ENTRIES_ID;
 
     appendEntries_message = RevPiDDS_AppendEntries__alloc();
     appendEntries_message->senderID = this_replica->ID;
     appendEntries_message->term = this_replica->current_term;
+    appendEntries_message->inputID = inputID;
 
-    if (handle != NULL) {
-        input_ID = handle->id;
-        appendEntries_message->entries = handle->data;
-    }
-
-    appendEntries_message->inputID = input_ID;
+    uint8_t payload_size = 1;
+    appendEntries_message->entries._length = payload_size;
+    appendEntries_message->entries._maximum = payload_size;
+    appendEntries_message->entries._buffer = DDS_sequence_long_allocbuf(payload_size);
+    appendEntries_message->entries._buffer[0] = baliseID;
 
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
     checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message (cluster Process)");
@@ -341,12 +342,12 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
     replica_result_t reply;
     reply.replica_id = this_replica->ID;
     reply.term = this_replica->current_term;
-    // reply.should_break = decide_should_brake(handle->data._buffer + 2, handle->data._buffer[1]);
-    if (handle != NULL) {
-        reply.should_break = decide_should_brake(&handle->data, &reply.reason);
+    if (inputID != NO_ENTRIES_ID) {
+        reply.should_break = decide_should_brake(true, baliseID, &reply.reason);
     } else {
-        reply.should_break = decide_should_brake(NULL, &reply.reason);
+        reply.should_break = decide_should_brake(false, NO_ENTRIES_ID, &reply.reason);
     }
+    printf("THE REASONG THAT I GOT IS%d\n", reply.reason);
     replies[num_replies] = reply;
     num_replies++;
 
@@ -373,17 +374,19 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
                         reply_ID = msgSeq._buffer[i].id;
                         success = msgSeq._buffer[i].success;
                         should_brake = msgSeq._buffer[i].should_brake;
+                        reason = msgSeq._buffer[i].reason;
 
                         if (sender_ID == this_replica->ID) {
                             continue;
                         }
 
-                        printf("Got some new appendEntriesReply Data from %d - ReplyID: %d Term: %d Success: %d\n", sender_ID, reply_ID, received_Term, success);
-                        if (success && reply_ID == input_ID) {
+                        printf("Got some new appendEntriesReply Data from %d - ReplyID: %d Term: %d Success: %d Reason: %d\n", sender_ID, reply_ID, received_Term, success, reason);
+                        if (success && reply_ID == inputID) {
                             replica_result_t reply;
                             reply.replica_id = sender_ID;
                             reply.term = received_Term;
                             reply.should_break = should_brake;
+                            reply.reason = reason;
                             replies[num_replies] = reply;
                             num_replies++;
                         }
@@ -416,7 +419,7 @@ void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* ha
         }
 
         pthread_mutex_lock(&this_replica->consensus_mutex);
-        on_result(handle, replies, num_replies);
+        on_result(inputID, baliseID, replies, num_replies);
         pthread_mutex_unlock(&this_replica->consensus_mutex);
     } else {
         on_fail();

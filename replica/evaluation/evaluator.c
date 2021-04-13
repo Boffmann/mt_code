@@ -8,14 +8,6 @@ struct timeval time_leader_election_started;
 bool got_leader = true;
 uint32_t leader_election_restarts = 0;
 
-void initialize_evaluator() {
-    // num_missed_election_timeouts_FILE = fopen("missed_election_timeouts.csv", "w");
-    // time_until_leader_elected_FILE = fopen("leader_election_duration.csv", "w");
-
-    // fclose(time_until_leader_elected_FILE);
-    // fclose(num_missed_election_timeouts_FILE);
-}
-
 void evaluator_registered_election_timeout(const uint32_t id, const uint32_t term) {
     num_missed_election_timeouts++;
     num_missed_election_timeouts_FILE = fopen("missed_election_timeouts.csv", "a");
@@ -60,22 +52,54 @@ void evaluator_got_new_leader(const uint8_t id, const uint32_t term) {
     fclose(time_until_leader_elected_FILE);
 }
 
+const char* reason_to_string(enum StoppedReason reason) {
+
+    switch(reason) {
+        case END_OF_MA:
+            return "Reached End of MA";
+            break;
+        case BALISE_NOT_LINKED:
+            return "Balise Not Linked";
+            break;
+        case BALISE_NOT_WHERE_EXPECTED:
+            return "Balise Not Where Expected";
+            break;
+        default:
+        return "None";
+    }
+}
+
 void evaluator_start_new_jouney() {
     scenario_evaluation_FILE = fopen("scenario_evaluation.yml", "w");
+
+    fprintf(scenario_evaluation_FILE, "%s;%s;%s;%s\n", "Position", "Action", "Balise Number", "Reason");
 
     fclose(scenario_evaluation_FILE);
 
 }
 
-void evaluator_train_stopped(const double stopped_position, enum StoppedReason reason) {
+void evaluator_train_stopped(const double stopped_position, int balise_id, enum StoppedReason reason) {
     scenario_evaluation_FILE = fopen("scenario_evaluation.yml", "a");
 
     if (scenario_evaluation_FILE == NULL) {
         printf("Could not open file for scenario evaluation");
     } else {
 
-        fprintf(scenario_evaluation_FILE, "%lf;%d\n", stopped_position, reason);
+        fprintf(scenario_evaluation_FILE, "%lf;%s;%d;%s\n", stopped_position, "Stopped", balise_id, reason_to_string(reason));
     }
 
     fclose(scenario_evaluation_FILE);
+}
+
+void evaluator_reached_balise(const double position, int balise_id) {
+    scenario_evaluation_FILE = fopen("scenario_evaluation.yml", "a");
+
+    if (scenario_evaluation_FILE == NULL) {
+        printf("Could not open file for scenario evaluation");
+    } else {
+        fprintf(scenario_evaluation_FILE, "%lf;%s;%d;%s\n", position, "Reached Balise", balise_id, "");
+    }
+
+    fclose(scenario_evaluation_FILE);
+
 }

@@ -11,6 +11,6 @@
 
 // I support a binary decision: Break or continue journey
 // bool decide_should_brake(const int* data, const uint8_t data_length);
-bool decide_should_brake(DDS_sequence_long *data, enum StoppedReason *reason);
+bool decide_should_brake(const bool is_balise_decision, const int baliseID, enum StoppedReason *reason);
 
 #endif

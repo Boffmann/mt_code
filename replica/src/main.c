@@ -19,56 +19,124 @@
 
 replica_t *this_replica;
 
-void perform_voting(RevPiDDS_Input* balise_telegram, const replica_result_t* results, const size_t length) {
+bool vote_should_brake(const replica_result_t* results, const size_t length) {
+    size_t i, j, count;;
+    size_t most = 0;
+    bool temp, elem = false;
 
-    DDS_ReturnCode_t status;
-
-    printf("Got new voting material\n");
-
-    if (length > 0) {
-        if (results[0].should_break) {
-            train_state_t train_state;
-            bool has_state = get_train_state(&train_state);
-            if (has_state) {
-                evaluator_train_stopped(train_state.position.position, results[0].reason);
+    for (i = 0; i < length; i++) {
+        if (results[i].term > this_replica->current_term) {
+            printf("The reply was made by a follower from the future\n");
+            continue;
+        }
+        temp = results[i].should_break;
+        count = 1;
+        for (j = i + 1; j < length; j++) {
+            if (results[j].term > this_replica->current_term) {
+                printf("The reply was made by a follower from the future\n");
+                continue;
+            }
+            if (results[j].should_break == temp) {
+                count++;
             }
         }
+
+        if (most < count) {
+            most = count;
+            elem = results[i].should_break;
+        }
     }
+
+    return elem;
+}
+
+uint8_t vote_reason(const replica_result_t* results, const size_t length) {
+    size_t i, j, count;;
+    size_t most = 0;
+    uint8_t temp, elem = 0;
+
+    for (i = 0; i < length; i++) {
+        if (results[i].term > this_replica->current_term) {
+            printf("The reply was made by a follower from the future\n");
+            continue;
+        }
+        temp = results[i].reason;
+        printf("Vote a reason is: %d\n", temp);
+        count = 1;
+        for (j = i + 1; j < length; j++) {
+            if (results[j].term > this_replica->current_term) {
+                printf("The reply was made by a follower from the future\n");
+                continue;
+            }
+            if (results[j].reason == temp) {
+                count++;
+            }
+        }
+
+        if (most < count) {
+            most = count;
+            elem = results[i].reason;
+        }
+    }
+
+    return elem;
+}
+
+void perform_voting(const uint32_t inputID, const int baliseID, const replica_result_t* results, const size_t length) {
+
+    DDS_ReturnCode_t status;
+    replica_result_t final_result;
+    train_state_t train_state;
+    bool has_state = false;
 
     if (this_replica->role != LEADER) {
         printf("Got new voting material but not leader anymore\n");
         return;
     }
 
-    if (balise_telegram != NULL && !results->should_break) {
+    printf("Got new voting material\n");
 
-        balise_t referenced_balise;
-        bool is_linked = get_balise_if_linked(balise_telegram->data._buffer[2], &referenced_balise);
-        if (is_linked) {
-            set_train_position(referenced_balise.position);
+    final_result.should_break = vote_should_brake(results, length);
+    final_result.reason = vote_reason(results, length);
+    has_state = get_train_state(&train_state);
+
+    if (final_result.should_break) {
+        if (has_state) {
+            printf("TRAIN SHOULD STOP BECAUSE OF: %d\n", final_result.reason);
+            evaluator_train_stopped(train_state.position.max_position, baliseID, results[0].reason);
         }
     }
 
-    // TODO Can it happen that replica died while processing and come back alive when result was processed by another leader?
-    // Prevent the result from being processed (committed) twice
-    for (size_t i = 0; i < length; ++i) {
-        replica_result_t result = results[i];
-        printf("Reply from Replica: %d\n", result.replica_id);
+    if (inputID != NO_ENTRIES_ID && !final_result.should_break) {
+        printf("The referenced balise has ID: %d\n", baliseID);
 
-        if (result.term > this_replica->current_term) {
-            printf("The reply was made by a follower from the future\n");
-            continue;
-        }
+        balise_t referenced_balise;
+        bool is_linked = get_balise_if_linked(baliseID, &referenced_balise);
+        if (is_linked) {
+            printf("Setting train position to %d of balise %d\n", referenced_balise.position, referenced_balise.ID);
+            if (has_state) {
+                evaluator_reached_balise(train_state.position.position, baliseID);
+            }
+            set_train_position(referenced_balise.position);
+        } 
+    }
 
-        if (balise_telegram != NULL) {
-            DDS_InstanceHandle_t handle = DDS_Entity_get_instance_handle(balise_telegram);
-            status = RevPiDDS_InputDataWriter_dispose(
-                input_DataWriter,
-                balise_telegram,
-                handle);
-            checkStatus(status, "Input_DataWriter Dispose input");
-        }
+    if (inputID != NO_ENTRIES_ID) {
+        // DDS_InstanceHandle_t handle = DDS_Entity_get_instance_handle(balise_telegram);
+        RevPiDDS_Input *input_data;
+        input_data = RevPiDDS_Input__alloc();
+        input_data->id = inputID;
+        DDS_InstanceHandle_t handle = RevPiDDS_InputDataWriter_lookup_instance(
+            input_DataWriter,
+            input_data
+        );
+        status = RevPiDDS_InputDataWriter_dispose(
+            input_DataWriter,
+            input_data,
+            handle);
+        checkStatus(status, "Input_DataWriter Dispose input");
 
+        DDS_free(input_data);
     }
 
 }
@@ -126,7 +194,7 @@ void main_loop() {
                             }
                         } else {
                             pthread_mutex_unlock(&this_replica->consensus_mutex);
-                            cluster_process(&message_seq->_buffer[i], &perform_voting, &on_no_results);
+                            cluster_process(message_seq->_buffer[i].id, data._buffer[2], &perform_voting, &on_no_results);
                             pthread_mutex_lock(&this_replica->consensus_mutex);
                         }
                     } else {
@@ -147,7 +215,7 @@ void main_loop() {
             printf("Calculate braking curve\n");
             // Emtpy input means only observe speed and braking curve
             pthread_mutex_unlock(&this_replica->consensus_mutex);
-            cluster_process(NULL, &perform_voting, &on_no_results);
+            cluster_process(NO_ENTRIES_ID, -1, &perform_voting, &on_no_results);
         } else {
             pthread_mutex_unlock(&this_replica->consensus_mutex);
             checkStatus(status, "DDS_WaitSet_wait (Input Waitset)");
@@ -165,7 +233,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    initialize_evaluator();
+    // initialize_evaluator();
 
     uint8_t replica_ID = (uint8_t)atoi(argv[1]);
 

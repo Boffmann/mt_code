@@ -110,6 +110,6 @@ void become_leader();
  * @param on_result function pointer that is invoked when decisions are collected successfully
  * @param on_fail function pointer that is invoked when the cluster failed to process the input
  */
-void cluster_process(RevPiDDS_Input* handle, void(*on_result)(RevPiDDS_Input* handle, const replica_result_t* result, const size_t length), void(*on_fail)(void));
+void cluster_process(const uint32_t inputID, const int baliseID, void(*on_result)(const uint32_t inputID, const int baliseID, const replica_result_t* result, const size_t length), void(*on_fail)(void));
 
 #endif

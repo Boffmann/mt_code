@@ -92,15 +92,18 @@ int main(int argc, char *argv[]) {
 
             printf("Train position: %lf\n", train_state.position.position);
 
-            if (next_balise_index >= scenario.balises.used) {
+            if (train_state.position.max_position > scenario.movement_authority.end_position) {
                 break;
             }
 
-            balise_t *next_balise = &scenario.balises.array[next_balise_index];
-            
-            if (train_state.position.max_position > next_balise->position) {
-                send_balise(next_balise);
-                next_balise_index++;
+            if (next_balise_index < scenario.balises.used) {
+
+                balise_t *next_balise = &scenario.balises.array[next_balise_index];
+                
+                if (train_state.position.max_position > next_balise->position) {
+                    send_balise(next_balise);
+                    next_balise_index++;
+                }
             }
 
         }

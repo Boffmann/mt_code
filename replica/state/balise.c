@@ -9,6 +9,7 @@ bool get_balise_if_linked(const uint8_t ID, balise_t* balise) {
     DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
     uint8_t balise_id;
 
+
     status = RevPiDDS_LinkedBalisesDataReader_read (
         linkedBalises_DataReader,
         &msgSeq,
@@ -19,6 +20,7 @@ bool get_balise_if_linked(const uint8_t ID, balise_t* balise) {
         DDS_ALIVE_INSTANCE_STATE
     );
     checkStatus(status, "RevPiDDS_LinkedBalisesDataReader_read");
+
 
     if (msgSeq._length > 0) {
         for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
