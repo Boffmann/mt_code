@@ -197,9 +197,6 @@ void send_linking_information(balise_array_t* linked_balises) {
     DDS_InstanceHandle_t test_instance;
     uint8_t payload_size;
 
-    printf("The first linked balises position: %d\n", linked_balises->array[0].position);
-    printf("The second linked balises position: %d\n", linked_balises->array[1].position);
-
     payload_size = 2 + linked_balises->used * 2;
     input_message = RevPiDDS_Input__alloc();
     input_message->id = inputID;

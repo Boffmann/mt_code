@@ -11,13 +11,49 @@
 #include "state/train.h"
 #include "datamodel.h"
 #include "evaluation/evaluator.h"
-#include "consensus/decisionMaking.h"
 
 #define STOP_TRAIN_ID 0
 #define MOVEMENT_AUTHORITY_RBC_ID 1
 #define BALISE_LINKING_RBC_ID 2
 
 replica_t *this_replica;
+
+void take_disposed_inputs() {
+
+    DDS_ReturnCode_t status;
+    DDS_sequence_RevPiDDS_Input msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
+    DDS_SampleInfoSeq                   infoSeq = {0, 0, DDS_OBJECT_NIL, FALSE};
+
+    status = RevPiDDS_InputDataReader_take(
+        input_DataReader,
+        &msgSeq,
+        &infoSeq,
+        DDS_LENGTH_UNLIMITED,
+        DDS_NOT_READ_SAMPLE_STATE | DDS_READ_SAMPLE_STATE,
+        DDS_NEW_VIEW_STATE | DDS_NOT_NEW_VIEW_STATE,
+        DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE
+    );
+    checkStatus(status, "RevPiDDS_InputDataReader_take_instance (take_input_instance)");
+
+}
+
+void dispose_input(RevPiDDS_Input *input_message) {
+
+    DDS_ReturnCode_t status;
+
+    DDS_InstanceHandle_t handle = RevPiDDS_InputDataWriter_lookup_instance(
+        input_DataWriter,
+        input_message
+    );
+    checkHandle(&handle, "RevPiDDS_InputDataWriter_lookup_instance (dispose_input)");
+
+    status = RevPiDDS_InputDataWriter_dispose(
+        input_DataWriter,
+        input_message,
+        handle);
+    checkStatus(status, "Input_DataWriter Dispose input");
+
+}
 
 bool vote_should_brake(const replica_result_t* results, const size_t length) {
     size_t i, j, count;;
@@ -84,7 +120,6 @@ uint8_t vote_reason(const replica_result_t* results, const size_t length) {
 
 void perform_voting(const uint32_t inputID, const int baliseID, const replica_result_t* results, const size_t length) {
 
-    DDS_ReturnCode_t status;
     replica_result_t final_result;
     train_state_t train_state;
     bool has_state = false;
@@ -122,19 +157,10 @@ void perform_voting(const uint32_t inputID, const int baliseID, const replica_re
     }
 
     if (inputID != NO_ENTRIES_ID) {
-        // DDS_InstanceHandle_t handle = DDS_Entity_get_instance_handle(balise_telegram);
         RevPiDDS_Input *input_data;
         input_data = RevPiDDS_Input__alloc();
         input_data->id = inputID;
-        DDS_InstanceHandle_t handle = RevPiDDS_InputDataWriter_lookup_instance(
-            input_DataWriter,
-            input_data
-        );
-        status = RevPiDDS_InputDataWriter_dispose(
-            input_DataWriter,
-            input_data,
-            handle);
-        checkStatus(status, "Input_DataWriter Dispose input");
+        dispose_input(input_data);
 
         DDS_free(input_data);
     }
@@ -157,22 +183,26 @@ void main_loop() {
         status = DDS_WaitSet_wait(input_WaitSet, input_GuardList, &input_Timeout);
         pthread_mutex_lock(&this_replica->consensus_mutex);
         if (status == DDS_RETCODE_OK) {
-            printf("Input waitSet triggered\n");
 
-            status = RevPiDDS_InputDataReader_take_w_condition(
+            take_disposed_inputs();
+
+            status = RevPiDDS_InputDataReader_read_w_condition(
                     input_DataReader,
                     message_seq,
                     message_infoSeq,
                     DDS_LENGTH_UNLIMITED,
                     input_ReadCondition);
-            checkStatus(status, "RevPiDDS_InputDataReader_take_w_condition");
+            checkStatus(status, "RevPiDDS_InputDataReader_read_w_condition");
 
             if (this_replica->role != LEADER) {
+
                 pthread_mutex_unlock(&this_replica->consensus_mutex);
                 status = RevPiDDS_InputDataReader_return_loan(input_DataReader, message_seq, message_infoSeq);
                 checkStatus(status, "RevPiDDS_InputDataReader_return_loan");
                 continue;
             }
+
+            printf("Input waitSet triggered\n");
 
             if (message_seq->_length > 0) {
                 for( i = 0; i < message_seq->_length ; i++ ) {
@@ -192,10 +222,13 @@ void main_loop() {
                                 evaluator_start_new_jouney();
                                 set_train_position(0);
                             }
+
+                            dispose_input(&message_seq->_buffer[i]);
                         } else if (data._buffer[0] == BALISE_LINKING_RBC_ID) {
                             if (!set_linked_balises(data)) {
                                 printf("Error setting linked balises\n");
                             }
+                            dispose_input(&message_seq->_buffer[i]);
                         } else {
                             pthread_mutex_unlock(&this_replica->consensus_mutex);
                             cluster_process(message_seq->_buffer[i].id, data._buffer[2], &perform_voting, &on_no_results);
