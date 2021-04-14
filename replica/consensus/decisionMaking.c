@@ -43,7 +43,6 @@ bool decide_should_brake(const bool is_balise_decision, const int baliseID, enum
     train_state_t current_state;
     bool has_state = get_train_state(&current_state);
 
-
     if (!has_state) {
         printf("Decision making: Has not state!!\n");
         return true;

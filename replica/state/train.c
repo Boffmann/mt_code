@@ -102,9 +102,14 @@ bool get_train_state(train_state_t* train_state) {
             train_state->position.min_position = msgSeq._buffer[0].min_position;
             train_state->speed = msgSeq._buffer[0].speed;
             train_state->lastUpdateTime = msgSeq._buffer[0].lastUpdateTime;
+            status = RevPiDDS_TrainStateDataReader_return_loan(trainState_DataReader, &msgSeq, &infoSeq);
+            checkStatus(status, "RevPiDDS_TrainStateDataReader_return_loan");
             return true;
         }
     }
+
+    status = RevPiDDS_TrainStateDataReader_return_loan(trainState_DataReader, &msgSeq, &infoSeq);
+    checkStatus(status, "RevPiDDS_TrainStateDataReader_return_loan");
 
     return false;
 }

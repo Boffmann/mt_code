@@ -156,10 +156,6 @@ void main_loop() {
     while (running) {
         status = DDS_WaitSet_wait(input_WaitSet, input_GuardList, &input_Timeout);
         pthread_mutex_lock(&this_replica->consensus_mutex);
-        if (this_replica->role != LEADER) {
-            pthread_mutex_unlock(&this_replica->consensus_mutex);
-            continue;
-        }
         if (status == DDS_RETCODE_OK) {
             printf("Input waitSet triggered\n");
 
@@ -169,7 +165,14 @@ void main_loop() {
                     message_infoSeq,
                     DDS_LENGTH_UNLIMITED,
                     input_ReadCondition);
-            checkStatus(status, "RevPiDDS_InputDataReader_read_w_condition");
+            checkStatus(status, "RevPiDDS_InputDataReader_take_w_condition");
+
+            if (this_replica->role != LEADER) {
+                pthread_mutex_unlock(&this_replica->consensus_mutex);
+                status = RevPiDDS_InputDataReader_return_loan(input_DataReader, message_seq, message_infoSeq);
+                checkStatus(status, "RevPiDDS_InputDataReader_return_loan");
+                continue;
+            }
 
             if (message_seq->_length > 0) {
                 for( i = 0; i < message_seq->_length ; i++ ) {
@@ -187,6 +190,7 @@ void main_loop() {
                                 printf("Error while parsing and setting MA data\n");
                             } else {
                                 evaluator_start_new_jouney();
+                                set_train_position(0);
                             }
                         } else if (data._buffer[0] == BALISE_LINKING_RBC_ID) {
                             if (!set_linked_balises(data)) {
@@ -212,6 +216,10 @@ void main_loop() {
             checkStatus(status, "RevPiDDS_InputDataReader_return_loan");
 
         } else if (status == DDS_RETCODE_TIMEOUT) {
+            if (this_replica->role != LEADER) {
+                pthread_mutex_unlock(&this_replica->consensus_mutex);
+                continue;
+            }
             printf("Calculate braking curve\n");
             // Emtpy input means only observe speed and braking curve
             pthread_mutex_unlock(&this_replica->consensus_mutex);
