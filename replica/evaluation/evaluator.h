@@ -11,7 +11,8 @@ enum StoppedReason {
     NONE = 0,
     END_OF_MA = 1,
     BALISE_NOT_LINKED = 2,
-    BALISE_NOT_WHERE_EXPECTED = 3
+    BALISE_NOT_WHERE_EXPECTED = 3,
+    HAS_NO_STATE = 4
 };
 
 extern uint32_t num_missed_election_timeouts;

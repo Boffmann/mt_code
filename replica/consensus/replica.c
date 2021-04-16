@@ -380,15 +380,42 @@ void cluster_process(const uint32_t inputID, const int baliseID, void(*on_result
                             continue;
                         }
 
+                        if (reply_ID != inputID) {
+                            printf("Got a reply but it does not correspond to the input ID that is processed\n");
+                            continue;
+                        }
+
                         printf("Got some new appendEntriesReply Data from %d - ReplyID: %d Term: %d Success: %d Reason: %d\n", sender_ID, reply_ID, received_Term, success, reason);
                         if (success && reply_ID == inputID) {
-                            replica_result_t reply;
-                            reply.replica_id = sender_ID;
-                            reply.term = received_Term;
-                            reply.should_break = should_brake;
-                            reply.reason = reason;
-                            replies[num_replies] = reply;
-                            num_replies++;
+                            // Each replica is only allowed to answer once
+                            // Duplicates, that can result due to network delays, are filtered out
+                            // Existing votes are only overwritten when new one is more restrictive
+
+                            bool replica_already_replied = false;
+                            uint8_t replica_already_replied_index = 0;
+
+                            for (uint8_t reply_index = 0; reply_index < num_replies; ++reply_index) {
+                                if (replies[reply_index].replica_id == sender_ID) {
+                                    replica_already_replied = true;
+                                    replica_already_replied_index = reply_index;
+                                    break;
+                                }
+                            }
+
+                            if (replica_already_replied) {
+                                if (!replies[replica_already_replied_index].should_break && should_brake) {
+                                    replies[replica_already_replied_index].should_break = should_brake;
+                                    replies[replica_already_replied_index].reason = reason;
+                                }
+                            } else {
+                                replica_result_t reply;
+                                reply.replica_id = sender_ID;
+                                reply.term = received_Term;
+                                reply.should_break = should_brake;
+                                reply.reason = reason;
+                                replies[num_replies] = reply;
+                                num_replies++;
+                            }
                         }
                     }
                 }

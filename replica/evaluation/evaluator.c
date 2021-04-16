@@ -64,6 +64,9 @@ const char* reason_to_string(enum StoppedReason reason) {
         case BALISE_NOT_WHERE_EXPECTED:
             return "Balise Not Where Expected";
             break;
+        case HAS_NO_STATE:
+            return "Has No State";
+            break;
         default:
         return "None";
     }
