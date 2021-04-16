@@ -221,6 +221,7 @@ void main_loop() {
                                 printf("Error while parsing and setting MA data\n");
                             } else {
                                 evaluator_start_new_jouney();
+                                initialize_train_state();
                             }
 
                             dispose_input(&message_seq->_buffer[i]);

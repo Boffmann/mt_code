@@ -176,7 +176,7 @@ void send_movement_authority(const scenario_t* const scenario) {
 
     test_instance = RevPiDDS_InputDataWriter_register_instance(input_DataWriter, input_message);
 
-    (void) test_instance;
+    printf("Sending movement authority with start %d and end %d\n", scenario->movement_authority.start_position, scenario->movement_authority.end_position);
 
     status = RevPiDDS_InputDataWriter_write(input_DataWriter, input_message, test_instance);
     checkStatus(status, "RevPiDDS_InputDataWriter_write");
