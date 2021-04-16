@@ -28,6 +28,12 @@ class Scenario(object):
         self.nextLineID += 1
         return Entry(line)
 
+    def printEvaluationFile(self):
+        print("Evaluation File Content:")
+        print("")
+        for line in self.lines:
+            print(line)
+
     def evaluateEntry(self, entry, min_position, max_position, action, baliseID, reason):
         if entry == None:
             self.printError(action + ": The entry was None")

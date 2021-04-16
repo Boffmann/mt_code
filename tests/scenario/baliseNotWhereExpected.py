@@ -10,15 +10,25 @@ class BaliseNotWhereExpected(Scenario):
         subprocess.call(["../Simulator/build/RevPiTrainSimulator", "../Simulator/Scenarios/baliseNotWhereExpected.json"])
 
     def printError(self, message):
-        print("BaliseNotWhereExpected: ERROR Occurred: " + message)
+        print('\033[1;31;40m ERROR - ', end="")
+        print("BaliseNotWhereExpected: " + message)
+        print('\033[0;0m')
 
     def printSuccess(self):
-        print("BaliseNotWhereExpected: SUCCESS")
+        print('\033[1;32;40m SUCCESS - ', end="")
+        print("BaliseNotWhereExpected")
+        print('\033[0;0m')
 
 
     def evaluate(self) -> bool:
 
         result = True
+
+        print('\033[1;33;40m ------------------')
+        print('\033[0;0m')
+        self.printEvaluationFile()
+        print('\033[1;33;40m ------------------')
+        print('\033[0;0m')
 
         entry = self.getNextTestLine()
         result &= self.evaluateEntry(entry, 1.0, 1.5, "Reached Balise", 0, "")
@@ -30,4 +40,5 @@ class BaliseNotWhereExpected(Scenario):
         if result:
             self.printSuccess()
 
-
+        print('\033[1;33;40m ------------------')
+        print('\033[0;0m')
