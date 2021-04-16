@@ -45,6 +45,7 @@ bool decide_should_brake(const bool is_balise_decision, const int baliseID, enum
 
     if (!has_state) {
         printf("Decision making: Has not state!!\n");
+        *reason = HAS_NO_STATE;
         return true;
     }
 

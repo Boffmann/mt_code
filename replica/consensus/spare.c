@@ -69,6 +69,6 @@ bool spare_wait_until_activated() {
         return activate_when_promted();
     }
     
-    // Unreachable
+    printf("This should be unreachable\n");
     return false;
 }

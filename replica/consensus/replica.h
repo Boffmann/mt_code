@@ -15,7 +15,6 @@
 #define VOTED_NONE 255
 #define ACTIVE_REPLICAS 3
 #define NUM_SPARES 1
-#define LOG_PUFFER 5
 
 #define NO_ENTRIES_ID 0
 #define HEARTBEAT_ID 1

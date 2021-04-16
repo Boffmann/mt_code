@@ -533,6 +533,7 @@ void createActivateSpareTopic() {
     activateSpare_DataWriter = createDataWriter(activateSpare_Publisher, activateSpare_Topic, dataWriterQos);
 
     if (this_replica->ID >= ACTIVE_REPLICAS) {
+        printf("Create activate spare reader subscriber\n");
         subscriberQos = DDS_SubscriberQos__alloc();
         checkHandle(subscriberQos, "DDS_SubscriberQos__alloc");
 
@@ -558,7 +559,7 @@ void createActivateSpareTopic() {
         activateSpare_DataReader = createDataReader(activateSpare_Subscriber, activateSpare_Topic, dataReaderQos);
 
         activateSpare_WaitSet = DDS_WaitSet__alloc();
-        checkHandle(collectVotes_WaitSet, "DDS_WaitSet__alloc activateSpare");
+        checkHandle(activateSpare_WaitSet, "DDS_WaitSet__alloc activateSpare");
 
         activateSpare_ReadCondition = RevPiDDS_InputDataReader_create_readcondition(
             activateSpare_DataReader,
@@ -567,6 +568,14 @@ void createActivateSpareTopic() {
             DDS_ALIVE_INSTANCE_STATE
         );
         checkHandle(activateSpare_ReadCondition, "DDS_DataReader_create_readcondition (activateSpare)");
+
+        activateSpare_GuardList = DDS_ConditionSeq__alloc();
+        checkHandle(activateSpare_GuardList, "DDS_ConditionSeq__alloc");
+        activateSpare_GuardList->_maximum = 1;
+        activateSpare_GuardList->_length = 0;
+        activateSpare_GuardList->_release = TRUE;
+        activateSpare_GuardList->_buffer = DDS_ConditionSeq_allocbuf(1);
+        checkHandle(activateSpare_GuardList->_buffer, "DDS_ConditionSeq_allocbuf");
 
         g_status = DDS_WaitSet_attach_condition(activateSpare_WaitSet, activateSpare_ReadCondition);
         checkStatus(g_status, "DDS_WaitSet_attach_condition (activateSpare_ReadCondition)");
@@ -629,14 +638,6 @@ void createLeaderElectionDDSFeatures() {
     appendEntriesReply_GuardList->_release = TRUE;
     appendEntriesReply_GuardList->_buffer = DDS_ConditionSeq_allocbuf(1);
     checkHandle(appendEntriesReply_GuardList->_buffer, "DDS_ConditionSeq_allocbuf");
-
-    activateSpare_GuardList = DDS_ConditionSeq__alloc();
-    checkHandle(activateSpare_GuardList, "DDS_ConditionSeq__alloc");
-    activateSpare_GuardList->_maximum = 1;
-    activateSpare_GuardList->_length = 0;
-    activateSpare_GuardList->_release = TRUE;
-    activateSpare_GuardList->_buffer = DDS_ConditionSeq_allocbuf(1);
-    checkHandle(activateSpare_GuardList->_buffer, "DDS_ConditionSeq_allocbuf");
 
     requestVoteReply_ReadCondition = DDS_DataReader_create_readcondition(
         requestVoteReply_DataReader,

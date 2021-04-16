@@ -15,6 +15,6 @@ bool activate_when_promted();
  * 
  * @return true when replica got activated, false if in spare state
  */
-bool spare_wait_until_activated();
+// bool spare_wait_until_activated();
 
 #endif

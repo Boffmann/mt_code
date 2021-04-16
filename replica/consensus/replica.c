@@ -15,7 +15,7 @@
 
 #include "evaluation/evaluator.h"
 
-uint8_t num_received_ae = 1;
+uint32_t num_received_ae = 1;
 
 void *runElectionTimer() {
 
@@ -31,15 +31,15 @@ void *runElectionTimer() {
 
     while (true) {
 
-        if (this_replica->role == SPARE) {
-            printf("Wait until activated\n");
-            bool is_active = spare_wait_until_activated();
+        // if (this_replica->role == SPARE) {
+        //     printf("Wait until activated\n");
+        //     bool is_active = spare_wait_until_activated();
 
-            if (!is_active) {
-                printf("Continued\n");
-                continue;
-            }
-        }
+        //     if (!is_active) {
+        //         printf("Continued\n");
+        //         continue;
+        //     }
+        // }
 
         status = DDS_WaitSet_wait(appendEntries_WaitSet, appendEntries_GuardList, &this_replica->election_timeout);
 
@@ -55,10 +55,18 @@ void *runElectionTimer() {
                 electionTimer_ReadCondition
             );
             checkStatus(status, "RevPiDDS_AppendEntriesDataReader_take (election Timer)");
+
             if (this_replica->role == SPARE) {
-                pthread_mutex_unlock(&this_replica->consensus_mutex);
-                printf("Continue because of being spare\n");
-                continue;
+
+                bool is_active = activate_when_promted();
+                
+                if (!is_active) {
+                    pthread_mutex_unlock(&this_replica->consensus_mutex);
+                    RevPiDDS_AppendEntriesDataReader_return_loan(appendEntries_DataReader, &msgSeq, &infoSeq);
+                    printf("Continue because of being spare\n");
+                    continue;
+                }
+
             }
             if (msgSeq._length > 0) {
 
