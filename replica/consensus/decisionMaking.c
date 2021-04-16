@@ -76,8 +76,11 @@ bool decide_should_brake(const bool is_balise_decision, const int baliseID, enum
         return true;
     }
 
+    double balise_position_drift = fabs(current_state.position.position - linked_balise.position);
 
-    if (current_state.position.min_position > linked_balise.position || current_state.position.max_position < linked_balise.position) {
+    printf("Position drift: %lf\n", balise_position_drift);
+
+    if (balise_position_drift > TRAIN_SPEED * 0.5) {
         printf("Decision making: Balise not where expected!!\n");
         *reason = BALISE_NOT_WHERE_EXPECTED;
         return true;

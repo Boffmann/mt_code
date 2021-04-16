@@ -6,7 +6,7 @@
 
 #define TRAIN_SPEED 1  // Train speed in m/s
 #define TRAIN_DELECERATION 0.4
-#define MAX_POS_INACCURACY 0.4
+#define MAX_POS_INACCURACY 0.1
 
 typedef struct {
     double min_position;
@@ -17,12 +17,14 @@ typedef struct {
 typedef struct {
     train_position_t position;
     float speed;
+    bool is_driving;
     unsigned long long lastUpdateTime;
 } train_state_t;
 
-// void initialize_train_state();
-void update_train_state();
+void initialize_train_state();
+void update_train_position();
 
+void set_train_driving(const bool is_driving);
 void set_train_position(const double position);
 
 bool get_train_state(train_state_t* train_state);

@@ -92,6 +92,10 @@ int main(int argc, char *argv[]) {
 
             printf("Train position: %lf\n", train_state.position.position);
 
+            if (!train_state.is_driving) {
+                break;
+            }
+
             if (train_state.position.max_position > scenario.movement_authority.end_position) {
                 break;
             }

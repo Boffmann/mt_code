@@ -95,7 +95,7 @@ bool set_linked_balises(const DDS_sequence_long input_data) {
         balise_t balise;
         balise.ID = input_data._buffer[2 + 2 * i];
         balise.position = input_data._buffer[2 + 2 * i + 1];
-        printf("Add a balise %d\n", balise.ID);
+        printf("Add a balise %d at position: %d\n", balise.ID, balise.position);
         add_linked_balise(&balise);
     }
 

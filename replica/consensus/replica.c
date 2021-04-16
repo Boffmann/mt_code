@@ -197,12 +197,12 @@ void *send_heartbeat() {
 
         if (has_ma) {
             if (!has_state) {
-                update_train_state();
+                initialize_train_state();
             } else {
-                printf("Has State: Max: %lf Min: %lf Start: %d End: %d\n", current_state.position.max_position, current_state.position.min_position, current_ma.start_position, current_ma.end_position);
+                printf("Has State: Max: %lf Min: %lf Start: %d End: %d Is Driving: %d\n", current_state.position.max_position, current_state.position.min_position, current_ma.start_position, current_ma.end_position, current_state.is_driving);
                 if (current_state.position.max_position < current_ma.end_position &&
                     current_state.position.min_position >= current_ma.start_position) {
-                        update_train_state();
+                        update_train_position();
                 } else {
                     printf("Not in area\n");
                 }
@@ -280,7 +280,7 @@ void initialize_replica(const uint8_t id) {
     DDSSetupState();
 
     this_replica->heartbeat_timeout.tv_sec = 0;
-    this_replica->heartbeat_timeout.tv_nsec = 500000000;
+    this_replica->heartbeat_timeout.tv_nsec = 100000000;
 
     this_replica->election_timeout.sec = id_dependent_timeout_sec;
     this_replica->election_timeout.nanosec = id_dependent_timeout_nanosec;

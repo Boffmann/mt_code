@@ -14,6 +14,7 @@ typedef struct {
 
     uint32_t id;
     uint32_t position;
+    uint32_t linked_position;
     bool linked;
     
 } balise_t;

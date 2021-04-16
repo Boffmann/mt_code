@@ -62,6 +62,7 @@ module RevPiDDS {
     double max_position;
     double min_position;
     float speed;
+    boolean is_driving;
     unsigned long long lastUpdateTime;
   };
   #pragma keylist TrainState

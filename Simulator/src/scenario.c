@@ -105,6 +105,10 @@ bool create_scenario_from(const char* scenario_path, scenario_t* scenario) {
                     t = &tokens[++i];
                     str = json_token_tostr(content, t);
                     new_balise.position = atoi(str);
+                } else if (strcmp(str, "link_pos") == 0) {
+                    t = &tokens[++i];
+                    str = json_token_tostr(content, t);
+                    new_balise.linked_position = atoi(str);
                 } else if (strcmp(str, "linked") == 0) {
                     t = &tokens[++i];
                     str = json_token_tostr(content, t);

@@ -209,9 +209,9 @@ void send_linking_information(balise_array_t* linked_balises) {
 
     for (size_t i = 0; i < linked_balises->used; ++i) {
         size_t index = 2 * i + 2;
-        printf("Sending linked balise with id %d and position %d\n", linked_balises->array[i].id, linked_balises->array[i].position);
+        printf("Sending linked balise with id %d and position %d\n", linked_balises->array[i].id, linked_balises->array[i].linked_position);
         input_message->data._buffer[index] = linked_balises->array[i].id;
-        input_message->data._buffer[index + 1] = linked_balises->array[i].position;
+        input_message->data._buffer[index + 1] = linked_balises->array[i].linked_position;
     }
 
     test_instance = RevPiDDS_InputDataWriter_register_instance(input_DataWriter, input_message);

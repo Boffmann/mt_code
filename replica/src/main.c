@@ -139,6 +139,7 @@ void perform_voting(const uint32_t inputID, const int baliseID, const replica_re
         if (has_state) {
             printf("TRAIN SHOULD STOP BECAUSE OF: %d\n", final_result.reason);
             evaluator_train_stopped(train_state.position.max_position, baliseID, results[0].reason);
+            set_train_driving(false);
         }
     }
 
@@ -220,7 +221,6 @@ void main_loop() {
                                 printf("Error while parsing and setting MA data\n");
                             } else {
                                 evaluator_start_new_jouney();
-                                set_train_position(0);
                             }
 
                             dispose_input(&message_seq->_buffer[i]);
