@@ -201,9 +201,9 @@ void *send_heartbeat() {
         train_state_t current_state;
 
         bool has_ma = get_movement_authority(&current_ma);
-        bool has_state = get_train_state(&current_state);
 
         if (has_ma) {
+            bool has_state = get_train_state(&current_state);
             if (!has_state) {
                 initialize_train_state();
             } else {

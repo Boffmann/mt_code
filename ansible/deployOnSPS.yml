@@ -9,7 +9,7 @@
       src: ./{{item}}
       dest: ~/revpi
     with_items:
-      ['../replica/src', '../replica/datamodel', '../replica/consensus', '../replica/DDSCreator', '../replica/DIO', '../replica/evaluation', '../replica/CMakeLists.txt']
+      ['../replica/src', '../replica/datamodel', '../replica/consensus', '../replica/DDSCreator', '../replica/DIO', '../replica/evaluation', '../replica/state', '../replica/CMakeLists.txt']
   - name: Create build Directory
     file:
       path: ~/revpi/build
