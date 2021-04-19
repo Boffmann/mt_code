@@ -52,6 +52,8 @@ void dispose_input(RevPiDDS_Input *input_message) {
         input_message,
         handle);
     checkStatus(status, "Input_DataWriter Dispose input");
+    
+    take_disposed_inputs();
 
 }
 
@@ -176,6 +178,7 @@ void main_loop() {
     bool running = true;
     DDS_ReturnCode_t status;
     unsigned long i = 0;
+
     DDS_sequence_RevPiDDS_Input* message_seq = DDS_sequence_RevPiDDS_Input__alloc();
     DDS_SampleInfoSeq* message_infoSeq = DDS_SampleInfoSeq__alloc();
     DDS_Duration_t input_Timeout = {1 , 0};
@@ -185,8 +188,6 @@ void main_loop() {
         pthread_mutex_lock(&this_replica->consensus_mutex);
         if (status == DDS_RETCODE_OK) {
 
-            take_disposed_inputs();
-
             status = RevPiDDS_InputDataReader_read_w_condition(
                     input_DataReader,
                     message_seq,
@@ -195,9 +196,25 @@ void main_loop() {
                     input_ReadCondition);
             checkStatus(status, "RevPiDDS_InputDataReader_read_w_condition");
 
+            // If not leader, than only listen for terminate messages that shutdown the system.
+            // Otherwise, discard inputs and continue
             if (this_replica->role != LEADER) {
 
+                if (message_seq->_length > 0) {
+                    for( i = 0; i < message_seq->_length ; i++ ) {
+                        if( message_infoSeq->_buffer[i].valid_data == TRUE ) {
+                            if (message_seq->_buffer[i].data._buffer[0] == STOP_TRAIN_ID) {
+                                pthread_mutex_unlock(&this_replica->consensus_mutex);
+                                DDS_free(message_seq);
+                                DDS_free(message_infoSeq);
+                                return;
+                            }
+                        }
+                    }
+                }
+
                 pthread_mutex_unlock(&this_replica->consensus_mutex);
+                take_disposed_inputs();
                 status = RevPiDDS_InputDataReader_return_loan(input_DataReader, message_seq, message_infoSeq);
                 checkStatus(status, "RevPiDDS_InputDataReader_return_loan");
                 continue;
@@ -213,6 +230,7 @@ void main_loop() {
 
                         DDS_sequence_long data = message_seq->_buffer[i].data;
                         if (data._buffer[0] == STOP_TRAIN_ID) {
+                            pthread_mutex_unlock(&this_replica->consensus_mutex);
                             DDS_free(message_seq);
                             DDS_free(message_infoSeq);
                             return;
@@ -293,11 +311,6 @@ int main(int argc, char *argv[]) {
 
     status = DDS_WaitSet_detach_condition(input_WaitSet, input_ReadCondition);
     checkStatus(status, "DDS_WaitSet_detach_condition");
-
-
-    status = RevPiDDS_InputDataReader_delete_readcondition(input_DataReader, input_ReadCondition);
-    checkStatus(status, "RevPiDDS_InputDataReader_delete_readcondition");
-
 
     teardown_replica();
     DDSCleanup();

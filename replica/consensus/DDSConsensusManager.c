@@ -38,6 +38,9 @@ void DDSConsensusCleanup() {
 
         g_status = RevPiDDS_RequestVoteReplyDataReader_delete_readcondition(activateSpare_DataReader, activateSpare_ReadCondition);
         checkStatus(g_status, "RevPiDDS_AppendEntriesDataReader_delete_readcondition (activateSpare)");
+
+        deleteDataReader(activateSpare_Subscriber, activateSpare_DataReader);
+        deleteSubscriber(domainParticipant, activateSpare_Subscriber);
     }
 
     g_status = RevPiDDS_AppendEntriesDataReader_delete_readcondition(appendEntries_DataReader, electionTimer_ReadCondition);
@@ -53,12 +56,10 @@ void DDSConsensusCleanup() {
     deleteDataReader(requestVote_Subscriber, requestVote_DataReader);
     deleteDataReader(requestVoteReply_Subscriber, requestVoteReply_DataReader);
     deleteDataReader(appendEntriesReply_Subscriber, appendEntriesReply_DataReader);
-    deleteDataReader(activateSpare_Subscriber, activateSpare_DataReader);
     deleteSubscriber(domainParticipant, appendEntries_Subscriber);
     deleteSubscriber(domainParticipant, requestVote_Subscriber);
     deleteSubscriber(domainParticipant, requestVoteReply_Subscriber);
     deleteSubscriber(domainParticipant, appendEntriesReply_Subscriber);
-    deleteSubscriber(domainParticipant, activateSpare_Subscriber);
     deleteDataWriter(appendEntries_Publisher, appendEntries_DataWriter);
     deleteDataWriter(requestVote_Publisher, requestVote_DataWriter);
     deleteDataWriter(requestVoteReply_Publisher, requestVoteReply_DataWriter);

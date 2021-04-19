@@ -17,6 +17,10 @@
 
 uint32_t num_received_ae = 1;
 
+
+volatile bool run_election_timer = true;
+volatile bool sending_heartbeats = true;
+
 void *runElectionTimer() {
 
     DDS_sequence_RevPiDDS_AppendEntries msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
@@ -29,7 +33,7 @@ void *runElectionTimer() {
     RevPiDDS_AppendEntriesReply* appendEntriesReply_message;
 
 
-    while (true) {
+    while (run_election_timer) {
 
         // if (this_replica->role == SPARE) {
         //     printf("Wait until activated\n");
@@ -172,6 +176,7 @@ void *runElectionTimer() {
 
     }
 
+    printf("PTHREAD EXIT\n");
     pthread_exit(NULL);
 }
 
@@ -181,7 +186,7 @@ void *send_heartbeat() {
     DDS_ReturnCode_t status;
     RevPiDDS_AppendEntries* appendEntries_message;
 
-    while (true) {
+    while (sending_heartbeats) {
         if (this_replica->role != LEADER) {
             pthread_mutex_lock(&this_replica->heartbeat_cond_lock);
             pthread_cond_wait(&this_replica->cond_send_heartbeats, &this_replica->heartbeat_cond_lock);
@@ -223,6 +228,8 @@ void *send_heartbeat() {
 
         nanosleep(&this_replica->heartbeat_timeout, &this_replica->heartbeat_timeout);
     }
+
+    pthread_exit(NULL);
 
 }
 
@@ -303,6 +310,8 @@ void initialize_replica(const uint8_t id) {
         printf("Replica is a spare unit\n");
         become_spare();
     }
+
+    this_replica->waiting_for_votes = true;
 
     if (pthread_create(&this_replica->election_timer_thread, NULL, runElectionTimer, NULL) != 0) {
         printf("Error creating election timer thread\n");
@@ -464,9 +473,21 @@ void cluster_process(const uint32_t inputID, const int baliseID, void(*on_result
 }
 
 void teardown_replica() {
-    DDSConsensusCleanup();
 
-    pthread_cancel(this_replica->request_vote_thread);
+    this_replica->waiting_for_votes = false;
+    pthread_join(this_replica->request_vote_thread, NULL);
+    printf("Joined voting thread\n");
+
+    sending_heartbeats = false;
+    pthread_cond_signal(&this_replica->cond_send_heartbeats);
+    pthread_join(this_replica->heartbeat_thread, NULL);
+    printf("Joined heartbeat thread\n");
+
+    run_election_timer = false;
+    pthread_join(this_replica->election_timer_thread, NULL);
+    printf("Joined election timer thread\n");
+
+    DDSConsensusCleanup();
 
     free(this_replica);
 }

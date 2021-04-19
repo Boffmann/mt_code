@@ -23,7 +23,7 @@ module RevPiDDS {
     boolean should_brake;
     long reason;
   };
-  #pragma keylist AppendEntriesReply
+  #pragma keylist AppendEntriesReply senderID
 
   struct RequestVote {
     long term;
@@ -38,12 +38,6 @@ module RevPiDDS {
     boolean voteGranted;
   };
   #pragma keylist RequestVoteReply
-
-  struct ReplicaResult {
-    long senderID;
-    long temp;
-  };
-  #pragma keylist ReplicaResult
 
   struct ActivateSpare {
     long term;
@@ -61,7 +55,7 @@ module RevPiDDS {
     double position;
     double max_position;
     double min_position;
-    float speed;
+    double speed;
     boolean is_driving;
     unsigned long long lastUpdateTime;
   };

@@ -50,6 +50,8 @@ typedef struct {
     uint32_t election_term;             // The term in which the replica candidated to become leader
     uint8_t voted_for;                  // The id for the replica that this replica voted for in current_term
 
+    volatile bool waiting_for_votes;
+
     pthread_mutex_t consensus_mutex;    // Mutex for atomically accessing this replica's fields
     pthread_mutex_t heartbeat_cond_lock;
     pthread_cond_t cond_send_heartbeats;

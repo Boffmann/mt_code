@@ -17,7 +17,6 @@ scenario_t scenario;
 
 void setup(char* filePath) {
 
-    domainParticipant = createParticipant("Test_Partition");
 
     // simulator_init();
     bool success = create_scenario_from(filePath, &scenario);
@@ -29,17 +28,19 @@ void setup(char* filePath) {
 
     printf("The scenario has %ld balises and %d linked\n", scenario.balises.used, scenario.num_linked_balises);
 
-    simulator_init();
 
 }
 
 int main(int argc, char *argv[]) {
 
+    domainParticipant = createParticipant("Test_Partition");
+    simulator_init();
+
     if (argc < 2) {
         printf("Should send a terminate command to replicas? y [N]");
 
         int input = getchar();
-        
+
         if (input == 'y' || input == 'Y') {
             send_terminate();
         }
@@ -103,7 +104,7 @@ int main(int argc, char *argv[]) {
             if (next_balise_index < scenario.balises.used) {
 
                 balise_t *next_balise = &scenario.balises.array[next_balise_index];
-                
+
                 if (train_state.position.max_position > next_balise->position) {
                     send_balise(next_balise);
                     next_balise_index++;

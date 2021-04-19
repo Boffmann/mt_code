@@ -270,10 +270,11 @@ void handle_vote_reply_message() {
 
 void *receive_vote_requests() {
     DDS_ReturnCode_t status;
-    DDS_Duration_t timeout = DDS_DURATION_INFINITE;
+    // DDS_Duration_t timeout = DDS_DURATION_INFINITE;
+    DDS_Duration_t timeout = {2 , 0};
     unsigned long guardList_index;
 
-    while (true) {
+    while (this_replica->waiting_for_votes) {
 
         status = DDS_WaitSet_wait(collectVotes_WaitSet, collectVotes_GuardList, &timeout);
 
@@ -293,4 +294,6 @@ void *receive_vote_requests() {
 
         }
     }
+
+    pthread_exit(NULL);
 }
