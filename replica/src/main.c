@@ -208,6 +208,7 @@ void main_loop() {
             if (message_seq->_length > 0) {
                 for( i = 0; i < message_seq->_length ; i++ ) {
                     printf("\n    --- New message received ---");
+                    evaluator_register_message_received(this_replica->ID, "InputData", this_replica->role == LEADER);
                     if( message_infoSeq->_buffer[i].valid_data == TRUE ) {
                         printf("\n    Message : \"%d\"\n", message_seq->_buffer[i].id);
 
@@ -274,6 +275,7 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s [replicaID]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+    initialize_evaluator();
 
     // initialize_evaluator();
 

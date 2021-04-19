@@ -3,6 +3,9 @@
 #include "datamodel.h"
 #include "DDSStateManager.h"
 
+#include "evaluation/evaluator.h"
+#include "consensus/replica.h"
+
 void add_linked_balise(const balise_t* balise);
 
 bool get_balise_if_linked(const uint8_t ID, balise_t* balise) {
@@ -27,6 +30,7 @@ bool get_balise_if_linked(const uint8_t ID, balise_t* balise) {
     if (msgSeq._length > 0) {
         for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
             if (infoSeq._buffer[i].valid_data) {
+                evaluator_register_message_received(this_replica->ID, "LinkedBalises", this_replica->role == LEADER);
                 balise_id = msgSeq._buffer[i].ID;
                 printf("Found this balise in linked list: ID: %d Position: %d\n", balise_id, msgSeq._buffer[i].position);
 
@@ -74,6 +78,7 @@ bool set_linked_balises(const DDS_sequence_long input_data) {
     if (msgSeq._length > 0) {
         for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
             if (infoSeq._buffer[i].valid_data) {
+                evaluator_register_message_received(this_replica->ID, "LinkedBalises", this_replica->role == LEADER);
                 handle = RevPiDDS_LinkedBalisesDataWriter_lookup_instance(
                     linkedBalises_DataWriter,
                     &msgSeq._buffer[i]
@@ -113,6 +118,7 @@ void add_linked_balise(const balise_t* balise) {
 
     linked_balise_instance = RevPiDDS_LinkedBalisesDataWriter_register_instance(linkedBalises_DataWriter, linked_balise_message);
 
+    evaluator_register_message_send(this_replica->ID, "LinkedBalises", this_replica->role == LEADER);
     status = RevPiDDS_LinkedBalisesDataWriter_write(linkedBalises_DataWriter, linked_balise_message, linked_balise_instance);
     checkStatus(status, "RevPiDDS_LinkedBalisesDataWriter_write LinkedBalise");
 

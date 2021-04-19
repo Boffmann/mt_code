@@ -4,6 +4,8 @@
 
 #include "datamodel.h"
 #include "DDSStateManager.h"
+#include "evaluation/evaluator.h"
+#include "consensus/replica.h"
 
 void initialize_train_state() {
     DDS_ReturnCode_t status;
@@ -20,6 +22,7 @@ void initialize_train_state() {
     newTrainState_message->speed = TRAIN_SPEED;
     newTrainState_message->is_driving = true;
     newTrainState_message->lastUpdateTime = now_microseconds;
+    evaluator_register_message_send(this_replica->ID, "TrainState", this_replica->role == LEADER);
     status = RevPiDDS_TrainStateDataWriter_write(trainState_DataWriter, newTrainState_message, DDS_HANDLE_NIL);
     checkStatus(status, "RevPiDDS_TrainStateDataWriter write Initial");
 
@@ -61,6 +64,7 @@ void update_train_position() {
             newTrainState_message->speed = TRAIN_SPEED;
             newTrainState_message->is_driving = last_state.is_driving;
             newTrainState_message->lastUpdateTime = now_microseconds;
+            evaluator_register_message_send(this_replica->ID, "TrainState", this_replica->role == LEADER);
             status = RevPiDDS_TrainStateDataWriter_write(trainState_DataWriter, newTrainState_message, DDS_HANDLE_NIL);
             checkStatus(status, "RevPiDDS_TrainStateDataWriter write Initial");
         }
@@ -85,6 +89,7 @@ void set_train_driving(const bool is_driving) {
         newTrainState_message->speed = last_state.speed;
         newTrainState_message->is_driving = is_driving;
         newTrainState_message->lastUpdateTime = last_state.lastUpdateTime;
+        evaluator_register_message_send(this_replica->ID, "TrainState", this_replica->role == LEADER);
         status = RevPiDDS_TrainStateDataWriter_write(trainState_DataWriter, newTrainState_message, DDS_HANDLE_NIL);
         checkStatus(status, "RevPiDDS_TrainStateDataWriter write Initial");
     }
@@ -109,6 +114,7 @@ void set_train_position(const double position) {
         newTrainState_message->speed = last_state.speed;
         newTrainState_message->is_driving = last_state.is_driving;
         newTrainState_message->lastUpdateTime = now_microseconds;
+        evaluator_register_message_send(this_replica->ID, "TrainState", this_replica->role == LEADER);
         status = RevPiDDS_TrainStateDataWriter_write(trainState_DataWriter, newTrainState_message, DDS_HANDLE_NIL);
         checkStatus(status, "RevPiDDS_TrainStateDataWriter write Initial");
         DDS_free(newTrainState_message);
@@ -135,6 +141,7 @@ bool get_train_state(train_state_t* train_state) {
 
     if (msgSeq._length > 0) {
         if (infoSeq._buffer[0].valid_data) {
+            // evaluator_register_message_received(this_replica->ID, "TrainState", this_replica->role == LEADER);
             train_state->position.position = msgSeq._buffer[0].position;
             train_state->position.max_position = msgSeq._buffer[0].max_position;
             train_state->position.min_position = msgSeq._buffer[0].min_position;

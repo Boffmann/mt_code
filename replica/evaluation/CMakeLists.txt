@@ -46,5 +46,6 @@ target_link_libraries(${target}
   PRIVATE
   ${OSPL_LINK_LIBS}
   ${datamodel_lib}
+  pthread
   ${State_lib}
 )

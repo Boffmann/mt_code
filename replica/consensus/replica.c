@@ -80,6 +80,7 @@ void *runElectionTimer() {
                         if (sender_ID == this_replica->ID) {
                             continue;
                         }
+                        evaluator_register_message_received(this_replica->ID, "AppendEntries", this_replica->role == LEADER);
 
                         if (received_Term > this_replica->current_term) {
                             become_follower(received_Term);
@@ -135,6 +136,7 @@ void *runElectionTimer() {
                                 appendEntriesReply_message->reason = reason;
                             }
 
+                            evaluator_register_message_send(this_replica->ID, "AppendEntriesReply", this_replica->role == LEADER);
                             status = RevPiDDS_AppendEntriesReplyDataWriter_write(appendEntriesReply_DataWriter, appendEntriesReply_message, DDS_HANDLE_NIL);
                             checkStatus(status, "RevPiDDS_AppendEntriesReplyDataWriter write AppendEntriesReply");
                             DDS_free(appendEntriesReply_message);
@@ -194,6 +196,7 @@ void *send_heartbeat() {
         appendEntries_message->inputID = HEARTBEAT_ID;
 
         printf("About to send heartbeat with term %d\n", appendEntries_message->term);
+        evaluator_register_message_send(this_replica->ID, "AppendEntries", this_replica->role == LEADER);
         status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
         checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message (heartbeat)");
 
@@ -344,6 +347,7 @@ void cluster_process(const uint32_t inputID, const int baliseID, void(*on_result
     appendEntries_message->entries._buffer = DDS_sequence_long_allocbuf(payload_size);
     appendEntries_message->entries._buffer[0] = baliseID;
 
+    evaluator_register_message_send(this_replica->ID, "AppendEntries", this_replica->role == LEADER);
     status = RevPiDDS_AppendEntriesDataWriter_write(appendEntries_DataWriter, appendEntries_message, DDS_HANDLE_NIL);
     checkStatus(status, "RevPiDDS_AppendEntriesDataWriter_write appendEntries_message (cluster Process)");
 
@@ -392,6 +396,7 @@ void cluster_process(const uint32_t inputID, const int baliseID, void(*on_result
                             printf("Got a reply but it does not correspond to the input ID that is processed\n");
                             continue;
                         }
+                        evaluator_register_message_received(this_replica->ID, "AppendEntriesReply", this_replica->role == LEADER);
 
                         printf("Got some new appendEntriesReply Data from %d - ReplyID: %d Term: %d Success: %d Reason: %d\n", sender_ID, reply_ID, received_Term, success, reason);
                         if (success && reply_ID == inputID) {
@@ -449,6 +454,7 @@ void cluster_process(const uint32_t inputID, const int baliseID, void(*on_result
             RevPiDDS_ActivateSpare *activateSpare_message = RevPiDDS_ActivateSpare__alloc();
             activateSpare_message->term = this_replica->current_term;
             activateSpare_message->activate = activate_spare;
+            evaluator_register_message_send(this_replica->ID, "ActivateSpare", this_replica->role == LEADER);
             status = RevPiDDS_ActivateSpareDataWriter_write(activateSpare_DataWriter, activateSpare_message, DDS_HANDLE_NIL);
             checkStatus(status, "RevPiDDS_ActivateSpareDataWriter_write activateSpare!");
         }

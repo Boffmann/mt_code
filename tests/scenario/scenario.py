@@ -18,8 +18,8 @@ class Scenario(object):
     def run(self):
         self.execute_simulator()
         time.sleep(1)
-        file = open('../replica/build/scenario_evaluation.yml')
-        self.lines = file.readlines()
+        # file = open('../replica/build/scenario_evaluation.yml')
+        # self.lines = file.readlines()
 
     def getNextTestLine(self) -> Entry:
         if len(self.lines) < self.nextLineID + 1:
@@ -31,8 +31,8 @@ class Scenario(object):
     def printEvaluationFile(self):
         print("Evaluation File Content:")
         print("")
-        for line in self.lines:
-            print(line)
+        # for line in self.lines:
+        #     print(line)
 
     def evaluateEntry(self, entry, min_position, max_position, action, baliseID, reason):
         if entry == None:

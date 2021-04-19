@@ -23,6 +23,7 @@ bool activate_when_promted() {
     checkStatus(status, "RevPiDDS_ActivateSpareDataReader_take");
 
     if (msgSeq._length > 0) {
+    evaluator_register_message_received(this_replica->ID, "ActivateSpare", this_replica->role == LEADER);
 
         for (DDS_unsigned_long i = 0; i < msgSeq._length; ++i) {
             if (infoSeq._buffer[i].valid_data) {

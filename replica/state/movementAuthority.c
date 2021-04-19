@@ -4,6 +4,8 @@
 #include "DDSStateManager.h"
 
 #include "train.h"
+#include "evaluation/evaluator.h"
+#include "consensus/replica.h"
 
 void set_movement_authority(const movement_authority_t* ma) {
     DDS_ReturnCode_t status;
@@ -11,6 +13,7 @@ void set_movement_authority(const movement_authority_t* ma) {
 
     movementAuthority_message->start_position = ma->start_position;
     movementAuthority_message->end_position = ma->end_position;
+    evaluator_register_message_send(this_replica->ID, "MovementAuthority", this_replica->role == LEADER);
     status = RevPiDDS_MovementAuthorityDataWriter_write(movementAuthority_DataWriter, movementAuthority_message, DDS_HANDLE_NIL);
     printf("Added a MA to topic: Positions: %d %d\n", ma->start_position, ma->end_position);
     checkStatus(status, "RevPiDDS_TrainStateDataWriter write Initial");
@@ -51,6 +54,7 @@ bool get_movement_authority(movement_authority_t* ma) {
 
     if (msgSeq._length > 0) {
         if (infoSeq._buffer[0].valid_data) {
+            evaluator_register_message_received(this_replica->ID, "MovementAuthority", this_replica->role == LEADER);
             ma->start_position = msgSeq._buffer[0].start_position;
             ma->end_position = msgSeq._buffer[0].end_position;
             return true;

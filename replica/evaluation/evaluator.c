@@ -8,6 +8,11 @@ struct timeval time_leader_election_started;
 bool got_leader = true;
 uint32_t leader_election_restarts = 0;
 
+
+void initialize_evaluator() {
+    pthread_mutex_init(&fileWrite_mutex, NULL);
+}
+
 void evaluator_registered_election_timeout(const uint32_t id, const uint32_t term) {
     num_missed_election_timeouts++;
     num_missed_election_timeouts_FILE = fopen("missed_election_timeouts.csv", "a");
@@ -43,10 +48,10 @@ void evaluator_got_new_leader(const uint8_t id, const uint32_t term) {
         struct timeval time_leader_election_ended;
         gettimeofday(&time_leader_election_ended, NULL);
 
-        long start_microseconds = time_leader_election_started.tv_sec * 1000000L + time_leader_election_started.tv_usec;
-        long end_microseconds = time_leader_election_ended.tv_sec * 1000000L + time_leader_election_ended.tv_usec;
+        unsigned long long start_microseconds = time_leader_election_started.tv_sec * 1000000LL + time_leader_election_started.tv_usec;
+        unsigned long long end_microseconds = time_leader_election_ended.tv_sec * 1000000LL + time_leader_election_ended.tv_usec;
 
-        fprintf(time_until_leader_elected_FILE, "%d;%d;%ld;%ld;%ld;%d;\n", id, term, start_microseconds, end_microseconds, end_microseconds - start_microseconds, leader_election_restarts);
+        fprintf(time_until_leader_elected_FILE, "%d;%d;%lld;%lld;%lld;%d;\n", id, term, start_microseconds, end_microseconds, end_microseconds - start_microseconds, leader_election_restarts);
     }
 
     fclose(time_until_leader_elected_FILE);
@@ -104,5 +109,53 @@ void evaluator_reached_balise(const double position, int balise_id) {
     }
 
     fclose(scenario_evaluation_FILE);
+
+}
+
+void evaluator_register_message_send(const uint8_t senderID, char* topic, bool is_leader) {
+
+    message_send_FILE = fopen("message_send.csv", "a");
+
+    if (message_send_FILE==NULL) {
+        printf("Error opening the file for message send\n");
+    } else {
+
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+
+        unsigned long long time_now_microseconds = time_now.tv_sec * 1000000LL + time_now.tv_usec;
+
+        printf("Writing into register file\n");
+        fprintf(message_send_FILE, "%lld;%d;%s;%d\n", time_now_microseconds, senderID, topic, is_leader);
+    }
+
+    fclose(message_send_FILE);
+
+}
+
+void evaluator_register_message_received(const uint8_t senderID, char* topic, bool is_leader) {
+    // (void) senderID;
+    // (void) topic;
+    // (void) is_leader;
+    pthread_mutex_lock(&fileWrite_mutex);
+
+    message_received_FILE = fopen("message_received.csv", "a");
+
+    if (message_received_FILE==NULL) {
+        printf("Error opening the file for message received\n");
+    } else {
+
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+
+        unsigned long long time_now_microseconds = time_now.tv_sec * 1000000LL + time_now.tv_usec;
+
+        printf("Writing into received file\n");
+        fprintf(message_received_FILE, "%lld;%d;%s;%d\n", time_now_microseconds, senderID, topic, is_leader);
+    }
+
+    fclose(message_received_FILE);
+    pthread_mutex_unlock(&fileWrite_mutex);
+
 
 }

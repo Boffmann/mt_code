@@ -39,6 +39,7 @@ void run_leader_election() {
         requestVoteMessage->senderID = this_replica->voted_for;
 
         printf("About to write onto RequestVote Topic\n");
+        evaluator_register_message_send(this_replica->ID, "RequestVote", this_replica->role == LEADER);
         status = RevPiDDS_RequestVoteDataWriter_write(requestVote_DataWriter, requestVoteMessage, DDS_HANDLE_NIL);
         checkStatus(status, "RevPiDDS_RequestVoteDataWriter_write");
 
@@ -83,6 +84,7 @@ void run_leader_election() {
                                     printf("Ohoh!! This should never have happened. Spare tries to become a leader!!");
                                     return;
                                 }
+                                evaluator_register_message_received(this_replica->ID, "AppendEntries", this_replica->role == LEADER);
                                 if (received_Term > this_replica->current_term) {
                                     printf("I am becoming a follower\n");
                                     become_follower(received_Term);
@@ -151,6 +153,7 @@ void handle_vote_message() {
                 if (sender_ID == this_replica->ID) {
                     continue;
                 }
+                evaluator_register_message_received(this_replica->ID, "RequestVote", this_replica->role == LEADER);
 
                 printf("Got this: voteTerm: %d candidate: %d\n", voteTerm, voteCandidate);
 
@@ -183,6 +186,7 @@ void handle_vote_message() {
                 } else {
                     printf("About to decline vote for replica %d with term %d because I already voted for %d\n", voteCandidate, this_replica->current_term, this_replica->voted_for);
                 }
+                evaluator_register_message_send(this_replica->ID, "RequestVoteReply", this_replica->role == LEADER);
                 status = RevPiDDS_RequestVoteReplyDataWriter_write(requestVoteReply_DataWriter, requestVoteReplyMessage, DDS_HANDLE_NIL);
                 checkStatus(status, "RevPiDDS_RequestVoteReplyDataWriter_write");
                 //  TODO Error in RevPiDDS_RequestVoteReplyDataWriter_write: DDS_RETCODE_OUT_OF_RESOURCES in term 7
@@ -206,7 +210,6 @@ void handle_vote_reply_message() {
     uint8_t sender_ID;
     bool voteGranted = false;
 
-    // TODO Read with condition
     status = RevPiDDS_RequestVoteReplyDataReader_take_w_condition(
         requestVoteReply_DataReader,
         &msgSeq,
@@ -233,6 +236,7 @@ void handle_vote_reply_message() {
                 if (sender_ID == this_replica->ID) {
                     continue;
                 }
+                evaluator_register_message_received(this_replica->ID, "RequestVoteReply", this_replica->role == LEADER);
 
                 printf("Got some new requestVoteReply Data from %d - Term: %d Granted: %d voted for: %d\n", sender_ID, voteTerm, voteGranted, voted_candidate);
                 

@@ -59,10 +59,12 @@ target_include_directories(${target}
 #
 
 find_library(State_lib state HINTS ../../replica/build)
+find_library(Evaluation_lib evaluator HINTS ../../replica/build)
 
 target_link_libraries(${target}
   PRIVATE
   ${OSPL_LINK_LIBS}
   ${State_lib}
+  ${Evaluation_lib}
   ${datamodel_lib}
 )
