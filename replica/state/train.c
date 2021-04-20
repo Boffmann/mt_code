@@ -141,6 +141,7 @@ bool get_train_state(train_state_t* train_state) {
 
     if (msgSeq._length > 0) {
         if (infoSeq._buffer[0].valid_data) {
+            // printf("Reading Train State!----------------------------------------------------------------------\n");
             // evaluator_register_message_received(this_replica->ID, "TrainState", this_replica->role == LEADER);
             train_state->position.position = msgSeq._buffer[0].position;
             train_state->position.max_position = msgSeq._buffer[0].max_position;

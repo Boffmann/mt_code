@@ -50,6 +50,7 @@ if $RUN; then
   NUM_PANES=`expr $NUM_PANES - 1`
   for pane_index in $( eval echo {0..$NUM_PANES}); do
     tmux send -t $PROJECT.$pane_index "cd ~/revpi/build" ENTER
+    tmux send -t $PROJECT.$pane_index "rm message_received.csv message_send.csv" ENTER
     tmux send -t $PROJECT.$pane_index "clear" ENTER
     tmux send -t $PROJECT.$pane_index "./replica $pane_index" ENTER
   done
