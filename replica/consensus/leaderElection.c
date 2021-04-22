@@ -9,6 +9,7 @@
 #include "evaluation/evaluator.h"
 
 uint8_t votes_received = 0;
+uint8_t num_failed_elections = 0;
 
 void run_leader_election() {
 
@@ -77,6 +78,7 @@ void run_leader_election() {
 
                                 if (sender_ID == this_replica->ID) {
                                     election_finished = true;
+                                    num_failed_elections = 0;
                                     break;
                                 }
 
@@ -94,6 +96,7 @@ void run_leader_election() {
                                     if (this_replica->role != FOLLOWER) {
                                         become_follower(received_Term);
                                     }
+                                    num_failed_elections = 0;
                                     election_finished = true;
                                 }
                             }
@@ -108,6 +111,12 @@ void run_leader_election() {
 
         } else if (status == DDS_RETCODE_TIMEOUT) {
             printf("Leader election timeouted\n");
+            num_failed_elections++;
+
+            if (num_failed_elections > 3) {
+                printf("NUM FAILED ELECTIONS TOOO HIGH\n");
+            }
+
             election_finished = true;
         } else {
             // Some error happened.

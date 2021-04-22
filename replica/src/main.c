@@ -169,7 +169,9 @@ void perform_voting(const uint32_t inputID, const int baliseID, const replica_re
 }
 
 void on_no_results(void) {
-    printf("Failed to deliver!!!!!\n");
+    printf("TRAIN SHOULD STOP BECAUSE OF: FAILED TO DELIVER\n");
+    // TODO
+    evaluator_train_stopped(0, -1, END_OF_MA);
 }
 
 void main_loop() {

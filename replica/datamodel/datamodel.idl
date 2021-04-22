@@ -23,7 +23,7 @@ module RevPiDDS {
     boolean should_brake;
     long reason;
   };
-  #pragma keylist AppendEntriesReply
+  #pragma keylist AppendEntriesReply senderID
 
   struct RequestVote {
     long term;

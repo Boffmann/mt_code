@@ -10,7 +10,7 @@ void DDSSetup() {
 
     input_ReadCondition = DDS_DataReader_create_readcondition(
         input_DataReader,
-        DDS_NOT_READ_SAMPLE_STATE | DDS_READ_SAMPLE_STATE,
+        DDS_NOT_READ_SAMPLE_STATE,
         DDS_NEW_VIEW_STATE | DDS_NOT_NEW_VIEW_STATE, // TODO Validate if this is correct
         DDS_ALIVE_INSTANCE_STATE
         // DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE
