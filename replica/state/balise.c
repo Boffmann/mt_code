@@ -116,8 +116,5 @@ void add_linked_balise(const balise_t* balise) {
     status = RevPiDDS_LinkedBalisesDataWriter_write(linkedBalises_DataWriter, linked_balise_message, linked_balise_instance);
     checkStatus(status, "RevPiDDS_LinkedBalisesDataWriter_write LinkedBalise");
 
-    // status = RevPiDDS_LinkedBalisesDataWriter_unregister_instance(linkedBalises_DataWriter, linked_balise_message, linked_balise_instance);
-    // checkStatus(status, "RevPiDDS_LinkedBalisesDataWriter_unregister_instance (linked balise)");
-
     DDS_free(linked_balise_message);
 }

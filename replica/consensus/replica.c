@@ -119,7 +119,6 @@ void *runElectionTimer() {
 
                                 // for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
                                 printf("Got the following entry: ID: %d and baliseID: %d\n", input_ID, entries_Seq._buffer[0]);
-                                // TODO Process
                                 enum StoppedReason reason;
                                 bool should_brake;
 

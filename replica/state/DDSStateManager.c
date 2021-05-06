@@ -4,13 +4,11 @@
 #include <stdbool.h>
 
 void createLinkedBaliseTopic();
-// void createBaliseGroupTopic();
 void createMovementAuthorityTopic();
 void createTrainStateTopic();
 
 void DDSSetupState() {
     createLinkedBaliseTopic();
-    // createBaliseGroupTopic();
     createMovementAuthorityTopic();
     createTrainStateTopic();
 }
@@ -18,23 +16,18 @@ void DDSSetupState() {
 void DDSStateCleanup() {
 
     deleteDataReader(linkedBalises_Subscriber, linkedBalises_DataReader);
-    // deleteDataReader(baliseGroup_Subscriber, baliseGroup_DataReader);
     deleteDataReader(movementAuthority_Subscriber, movementAuthority_DataReader);
     deleteDataReader(trainState_Subscriber, trainState_DataReader);
     deleteSubscriber(domainParticipant, linkedBalises_Subscriber);
-    // deleteSubscriber(domainParticipant, baliseGroup_Subscriber);
     deleteSubscriber(domainParticipant, movementAuthority_Subscriber);
     deleteSubscriber(domainParticipant, trainState_Subscriber);
     deleteDataWriter(linkedBalises_Publisher, linkedBalises_DataWriter);
-    // deleteDataWriter(baliseGroup_Publisher, baliseGroup_DataWriter);
     deleteDataWriter(movementAuthority_Publisher, movementAuthority_DataWriter);
     deleteDataWriter(trainState_Publisher, trainState_DataWriter);
     deletePublisher(domainParticipant, linkedBalises_Publisher);
-    // deletePublisher(domainParticipant, baliseGroup_Publisher);
     deletePublisher(domainParticipant, movementAuthority_Publisher);
     deletePublisher(domainParticipant, trainState_Publisher);
     deleteTopic(domainParticipant, linkedBalises_Topic);
-    // deleteTopic(domainParticipant, baliseGroup_Topic);
     deleteTopic(domainParticipant, movementAuthority_Topic);
     deleteTopic(domainParticipant, trainState_Topic);
 
