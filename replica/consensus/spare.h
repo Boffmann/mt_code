@@ -10,11 +10,4 @@
  */
 bool activate_when_promted();
 
-/**
- * Utilizes a waitset to wait until an activate message has been published to the corresponding topic
- * 
- * @return true when replica got activated, false if in spare state
- */
-// bool spare_wait_until_activated();
-
 #endif

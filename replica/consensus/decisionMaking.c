@@ -7,8 +7,14 @@
 #include "state/train.h"
 #include "state/movementAuthority.h"
 
-
-bool should_brake(const train_state_t* train_state) {
+/**
+ * Convencience Method to decide whether the train would reach the current MA's end and should therefore brake
+ * 
+ * @param train_state the current train state taken from the corresponding state topic
+ * 
+ * @returns true when train would reach end of MA, false otherwise
+ */
+bool would_reach_end_of_ma(const train_state_t* train_state) {
 
     movement_authority_t current_ma;
     bool has_ma = get_movement_authority(&current_ma);
@@ -50,7 +56,7 @@ bool decide_should_brake(const bool is_balise_decision, const int baliseID, enum
     }
 
     if (!is_balise_decision) {
-        if (should_brake(&current_state)) {
+        if (would_reach_end_of_ma(&current_state)) {
             printf("I DECIDED THAT THE TRIAN SHOULD BRAKE\n");
             *reason = END_OF_MA;
             return true;
@@ -69,7 +75,6 @@ bool decide_should_brake(const bool is_balise_decision, const int baliseID, enum
 
         is_linked = get_balise_if_linked(processed_balise.ID, &linked_balise);
     }
-    // Balise group for updating position
 
     if (!is_linked) {
         printf("Encountered balise not linked ID: %d\n", processed_balise.ID);;
@@ -89,7 +94,7 @@ bool decide_should_brake(const bool is_balise_decision, const int baliseID, enum
 
     printf("Everything fine. Calculate braking curve\n");
     
-    if (should_brake(&current_state)) {
+    if (would_reach_end_of_ma(&current_state)) {
         printf("I DECIDED THAT THE TRIAN SHOULD BRAKE\n");
         *reason = END_OF_MA;
         return true;

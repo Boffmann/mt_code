@@ -12,31 +12,31 @@
 
 #include "datamodel.h"
 
-#define VOTED_NONE 255
-#define ACTIVE_REPLICAS 3
-#define NUM_SPARES 1
+#define VOTED_NONE 255      // Used to indicate that the replica has not voted in current term
+#define ACTIVE_REPLICAS 3   // Used to specify how many replicas are in the system
+#define NUM_SPARES 1        // Used to specify how many spares are in the system
 
-#define NO_ENTRIES_ID 0
-#define HEARTBEAT_ID 1
+#define NO_ENTRIES_ID 0     // Used to indicate that decision making does not belong to any data but braking curve evaluation
+#define HEARTBEAT_ID 1      // Used to indicate that appendEntries message is a heartbeat message
 
 /**
  * Data structure that encodes a replica's decision to a log entry
  */
 typedef struct {
-    uint32_t replica_id;
-    uint32_t term;          // The term in which this result was generated
-    bool should_break;
-    enum StoppedReason reason;
+    uint32_t replica_id;                // The replica's id that made a decision
+    uint32_t term;                      // The term in which this result was generated
+    bool should_break;                  // Specifies whether the decision was to brake or continue driving
+    enum StoppedReason reason;          // Reason that a train must stop when decided to brake
 } replica_result_t;
 
 /**
  * Specifies different roles for the Raft cluster
  */
 typedef enum {
-    FOLLOWER,   // A follower processes instructions from leaders
-    CANDIDATE,  // A candidate tries to become the new leader in the system
-    LEADER,     // A leader is responsible for reading inputs and generating a single system output
-    SPARE       // A spare is a hot standby that can be activated by the leader, if needed
+    FOLLOWER,                           // A follower processes instructions from leaders
+    CANDIDATE,                          // A candidate tries to become the new leader in the system
+    LEADER,                             // A leader is responsible for reading inputs and generating a single system output
+    SPARE                               // A spare is a hot standby that can be activated by the leader, if needed
 } RaftRole;
 
 /**
@@ -45,24 +45,22 @@ typedef enum {
 typedef struct {
 
     uint8_t ID;                         // An unique identifier for this replica
-    RaftRole role;                      // The current raft role
-    uint32_t current_term;              // The current term in which this replica is
+    RaftRole role;                      // The replica's current raft role
+    uint32_t current_term;              // The replica's current term in which this replica is
     uint32_t election_term;             // The term in which the replica candidated to become leader
     uint8_t voted_for;                  // The id for the replica that this replica voted for in current_term
 
-    volatile bool waiting_for_votes;
+    volatile bool waiting_for_votes;    // Used as the controlling variable for the vote collection thread 
 
     pthread_mutex_t consensus_mutex;    // Mutex for atomically accessing this replica's fields
-    pthread_mutex_t heartbeat_cond_lock;
-    pthread_cond_t cond_send_heartbeats;
+    pthread_mutex_t heartbeat_cond_lock;// Mutex for the cond_send_heartbeats condition variable
+    pthread_cond_t cond_send_heartbeats;// Condition variable that is used to start and stop heartbeat sending
     pthread_t election_timer_thread;    // The thread in which the election timer is read
     pthread_t request_vote_thread;      // The thread in which requests votes and replies are processed
-    pthread_t heartbeat_thread;
+    pthread_t heartbeat_thread;         // The thread in which the heartbeats are sent by the leader
 
-    struct timespec heartbeat_timeout;
+    struct timespec heartbeat_timeout;  // Frequency for heartbeat sending
 
-    // struct sigaction heartbeat_action;  // Used for periodic heartbeat signals (for leader)
-    // struct itimerval heartbeat_timer;   // Used for periodic heartbeat signals (for leader)
     DDS_Duration_t election_timeout;    // Timeout at which a leader is declared dead when heartbeats are missed
 
 } replica_t;

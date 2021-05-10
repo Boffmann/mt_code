@@ -15,15 +15,13 @@ set(OSPL_LINK_LIBS PUBLIC ddskernel dcpssac)
 
 set(target RevPiTrainSimulator)
 
-set(include_path 
+set(include_path
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../jsmn"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../replica/state"
 )
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
-set(generated_path "${CMAKE_BINARY_DIR}/gen")
-
-set(datamodel_lib datamodel)
+set(generated_path "${CMAKE_CURRENT_SOURCE_DIR}/../../replica/build/gen")
 
 set(sources
   ${source_path}/CheckStatus.c
@@ -59,6 +57,7 @@ target_include_directories(${target}
 #
 
 find_library(State_lib state HINTS ../../replica/build)
+find_library(datamodel_lib datamodel HINTS ../../replica/build)
 
 target_link_libraries(${target}
   PRIVATE

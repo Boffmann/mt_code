@@ -163,9 +163,7 @@ void *runElectionTimer() {
                 pthread_mutex_unlock(&this_replica->consensus_mutex);
                 continue;
             }
-#if MEASURE_NUM_ELECTION_TIMEOUTS
-            evaluator_registered_election_timeout(this_replica->ID, this_replica->current_term);
-#endif
+            // evaluator_registered_election_timeout(this_replica->ID, this_replica->current_term);
             printf("No leader present in the system\n");
             evaluator_leader_election_started();
             run_leader_election();

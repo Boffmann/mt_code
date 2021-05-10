@@ -8,6 +8,7 @@
 
 #include "evaluation/evaluator.h"
 
+// Number of total valid votes received in the current term
 uint8_t votes_received = 0;
 
 void run_leader_election() {
@@ -238,7 +239,6 @@ void handle_vote_reply_message() {
                 
                 if (this_replica->role != CANDIDATE) {
                     printf("Got a vote reply, but I'm not candidate anymore\n");
-                    // pthread_mutex_unlock(&this_replica->consensus_mutex);
                     RevPiDDS_RequestVoteReplyDataReader_return_loan(requestVoteReply_DataReader, &msgSeq, &infoSeq);
                     break;
                 }
@@ -270,7 +270,7 @@ void handle_vote_reply_message() {
 
 void *receive_vote_requests() {
     DDS_ReturnCode_t status;
-    // DDS_Duration_t timeout = DDS_DURATION_INFINITE;
+    // Timeout used so that the thread is not blocked endlessly and can be safely stopped when system is shut down
     DDS_Duration_t timeout = {2 , 0};
     unsigned long guardList_index;
 
