@@ -186,7 +186,6 @@ void handle_vote_message() {
                 }
                 status = RevPiDDS_RequestVoteReplyDataWriter_write(requestVoteReply_DataWriter, requestVoteReplyMessage, DDS_HANDLE_NIL);
                 checkStatus(status, "RevPiDDS_RequestVoteReplyDataWriter_write");
-                //  TODO Error in RevPiDDS_RequestVoteReplyDataWriter_write: DDS_RETCODE_OUT_OF_RESOURCES in term 7
 
                 DDS_free(requestVoteReplyMessage);
             }
@@ -207,7 +206,6 @@ void handle_vote_reply_message() {
     uint8_t sender_ID;
     bool voteGranted = false;
 
-    // TODO Read with condition
     status = RevPiDDS_RequestVoteReplyDataReader_take_w_condition(
         requestVoteReply_DataReader,
         &msgSeq,

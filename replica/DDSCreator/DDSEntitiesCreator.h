@@ -1,6 +1,11 @@
 #ifndef __DDSENTITIESCREATOR_H__
 #define __DDSENTITIESCREATOR_H__
 
+/******************************************************
+ * Provides method to create and delete DDS Entities. *
+ * Functions are taken form ADLINK DCPS Examples.     *
+ ******************************************************/
+
 #include "dds_dcps.h"
 
 extern DDS_DomainId_t g_domainID;
@@ -14,8 +19,6 @@ extern DDS_ReturnCode_t g_status;
 DDS_DomainParticipant createParticipant(const char* partitionName);
 
 void deleteParticipant(DDS_DomainParticipant domainParticipant);
-
-// register Type
 
 DDS_Topic createTopic(DDS_DomainParticipant domainParticipant, const char* topicName, const char* typeName, const DDS_TopicQos* topicQos);
 void deleteTopic(DDS_DomainParticipant domainParticipant, DDS_Topic topic);

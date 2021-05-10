@@ -9,6 +9,7 @@ void createRequestVoteTopic();
 void createRequestVoteReplyTopic();
 void createActivateSpareTopic();
 void createReceiveVotesDDSFeatures();
+void createLeaderElectionDDSFeatures();
 
 void DDSSetupConsensus() {
 
@@ -17,7 +18,7 @@ void DDSSetupConsensus() {
     createRequestVoteTopic();
     createRequestVoteReplyTopic();
     createActivateSpareTopic();
-
+    createLeaderElectionDDSFeatures();
 }
 
 void DDSConsensusCleanup() {

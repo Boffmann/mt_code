@@ -7,8 +7,6 @@
 #include "datamodelDcps.h"
 #include "evaluation/evaluator.h"
 
-#define MAX_POSITION_DRIFT 100
-
 // I support a binary decision: Break or continue journey
 /**
  * Decides whether the train should brake or continue its journey. Is used both for validating balise telegrams and

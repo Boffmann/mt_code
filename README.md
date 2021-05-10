@@ -22,6 +22,7 @@ The solution has the following dependencies
 ```
 - Vortex OpenSplice
 - CMake
+- pthread library
 - A suitable C compiler such as gcc
 ```
 
@@ -32,7 +33,7 @@ The solution has the following dependencies
 Install the prerequisites on each `Revolution Pi`. To install `Vortex OpenSplice`, follow the instructions from [here](https://github.com/ADLINK-IST/opensplice) and execute `source $OSPL_HOME/release.com`.
 
 ### Network
-When run on separate machines that are interconnected via Ethernet, `Vortex OpenSplice` needs to be configured to use the network interface. Therefore, set the `NetworkInterfaceAddress` in `$OSPL_HOME/etc/config/ospl.xml` to the current IP address.
+`Vortex OpenSplice` needs to be configured to use the network interface. Therefore, set the `NetworkInterfaceAddress` in `$OSPL_HOME/etc/config/ospl.xml` to the current IP address.
 
 ## Compile
 The project is managed by `CMake`. After installing all dependencies, follow these steps to compile:

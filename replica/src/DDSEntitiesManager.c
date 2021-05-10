@@ -2,6 +2,8 @@
 
 #include <stdbool.h>
 
+void createInputTopic();
+
 void DDSSetup() {
 
     createParticipant("Test_Partition");

@@ -6,6 +6,9 @@
 #include "DDSCreator/DDSEntitiesCreator.h"
 
 
+/**
+ * All DDS Entities used in the consensus module
+ */
 DDS_Topic appendEntries_Topic, appendEntriesReply_Topic, requestVote_Topic, requestVoteReply_Topic, activateSpare_Topic;
 DDS_WaitSet appendEntries_WaitSet, appendEntriesReply_WaitSet, collectVotes_WaitSet, leaderElection_WaitSet, activateSpare_WaitSet;
 DDS_ReadCondition electionTimer_ReadCondition, requestVote_ReadCondition, requestVoteReply_ReadCondition, appendEntriesReply_ReadCondition, activateSpare_ReadCondition;
@@ -15,9 +18,14 @@ DDS_Publisher appendEntries_Publisher, appendEntriesReply_Publisher, requestVote
 DDS_DataWriter appendEntries_DataWriter, appendEntriesReply_DataWriter, requestVote_DataWriter, requestVoteReply_DataWriter, activateSpare_DataWriter;
 DDS_ConditionSeq *appendEntries_GuardList, *appendEntriesReply_GuardList, *collectVotes_GuardList, *leaderElection_GuardList, *activateSpare_GuardList;
 
+/**
+ * Create all DDS Entities for the consensus module
+ */
 void DDSSetupConsensus();
-void DDSConsensusCleanup();
 
-void createLeaderElectionDDSFeatures();
+/**
+ * Delete all DDS Entities of the consensus module
+ */
+void DDSConsensusCleanup();
 
 #endif

@@ -19,5 +19,8 @@ The replica implementation is subdivided into the following components:
 
 * `state:` Provides an interface to the distributed system's global state that is managed by DDS.
 
+## DIO Setup
+Make sure to configure the `Revolution Pi` DIO expansion as described on their [website](https://revolution.kunbus.com/tutorials/was-ist-pictory-2/)
+
 ## Compile and Deployment
 The compilation and deployment process for the replica program is described in the root README.

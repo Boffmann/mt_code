@@ -15,12 +15,20 @@
 
 #include "evaluation/evaluator.h"
 
+// Convenience variable to see how many appendEntries messages have been received since start
 uint32_t num_received_ae = 1;
 
-
+// Flag for election timer thread
 volatile bool run_election_timer = true;
+// Flag for sending heartbeats thread
 volatile bool sending_heartbeats = true;
 
+/**
+ * Function is anchor point for election timer thread
+ * 
+ * Reads heartbeat messages and process instructions from AppendEntries topic.
+ * When no heartbeat is received for a certain time, a new leader election process is started
+ */
 void *runElectionTimer() {
 
     DDS_sequence_RevPiDDS_AppendEntries msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};
@@ -34,16 +42,6 @@ void *runElectionTimer() {
 
 
     while (run_election_timer) {
-
-        // if (this_replica->role == SPARE) {
-        //     printf("Wait until activated\n");
-        //     bool is_active = spare_wait_until_activated();
-
-        //     if (!is_active) {
-        //         printf("Continued\n");
-        //         continue;
-        //     }
-        // }
 
         status = DDS_WaitSet_wait(appendEntries_WaitSet, appendEntries_GuardList, &this_replica->election_timeout);
 
@@ -117,7 +115,6 @@ void *runElectionTimer() {
                             if (entries_Seq._length > 0) {
                                 printf("Got some new entries\n");
 
-                                // for (DDS_unsigned_long entry_index = 0; entry_index < entries_Seq._length; ++entry_index) {
                                 printf("Got the following entry: ID: %d and baliseID: %d\n", input_ID, entries_Seq._buffer[0]);
                                 enum StoppedReason reason;
                                 bool should_brake;
@@ -159,7 +156,7 @@ void *runElectionTimer() {
                 continue;
             }
             if (this_replica->role != FOLLOWER && this_replica->role != CANDIDATE) {
-                // printf("Election Timer timeouted but I'm leader\n");
+                printf("Election Timer timeouted but I'm leader\n");
                 pthread_mutex_unlock(&this_replica->consensus_mutex);
                 continue;
             }
@@ -178,6 +175,13 @@ void *runElectionTimer() {
 }
 
 
+/**
+ * Function is anchor point for sending heartbeat thread
+ * 
+ * When leader, a heartbeat message is periodically sent.
+ * If not leader, the heartbeat sending is preemted with a condition variable.
+ * After the replica becomes leader, the heartbeat process is invoked by triggering the condition variable
+ */
 void *send_heartbeat() {
 
     DDS_ReturnCode_t status;
@@ -288,7 +292,6 @@ void initialize_replica(const uint8_t id) {
     this_replica->ID = id;
 
     DDSSetupConsensus();
-    createLeaderElectionDDSFeatures();
     DDSSetupState();
 
     this_replica->heartbeat_timeout.tv_sec = 0;

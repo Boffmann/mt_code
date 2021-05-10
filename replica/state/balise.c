@@ -3,8 +3,6 @@
 #include "datamodel.h"
 #include "DDSStateManager.h"
 
-void add_linked_balise(const balise_t* balise);
-
 bool get_balise_if_linked(const uint8_t ID, balise_t* balise) {
     DDS_ReturnCode_t status;
     DDS_sequence_RevPiDDS_LinkedBalises msgSeq  = {0, 0, DDS_OBJECT_NIL, FALSE};

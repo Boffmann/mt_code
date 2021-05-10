@@ -7,6 +7,9 @@
 #include "datamodel.h"
 
 
+/**
+ * DDS Entities used for reading and processing inputs
+ */
 DDS_Topic input_Topic;
 DDS_WaitSet input_WaitSet;
 DDS_ReadCondition input_ReadCondition;
@@ -15,16 +18,21 @@ DDS_DataReader input_DataReader;
 DDS_Publisher input_Publisher;
 DDS_DataWriter input_DataWriter;
 DDS_ConditionSeq *input_GuardList;
-// struct DDS_DataReaderListener *appendEntries_Listener, *requestVote_Listener, *requestVoteReply_Listener, *replicaResult_Listener;
 
+// The DDS Domain participant for the replica
 extern DDS_DomainParticipant domainParticipant;
+// The partition name where the participant is part of
 extern const char* partitionName;
 
+/**
+ * Setup the input processing DDS Entities
+ */
 void DDSSetup();
-void DDSCleanup();
 
-void createInputTopic();
-void createReplicaResultTopic();
+/**
+ * Cleanup all input processing DDS entities and release memory
+ */
+void DDSCleanup();
 
 
 #endif

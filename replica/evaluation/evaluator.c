@@ -2,10 +2,14 @@
 
 #include <sys/time.h>
 
+// Counter for the number of started leader elections
 uint32_t num_missed_election_timeouts = 0;
 
+// Time when a leader election is started to measure overall leader election times
 struct timeval time_leader_election_started;
+// Flag to count the number of failed leader elections in a row
 bool got_leader = true;
+// Number of times the leader election failed in a row
 uint32_t leader_election_restarts = 0;
 
 void evaluator_registered_election_timeout(const uint32_t id, const uint32_t term) {
@@ -52,6 +56,9 @@ void evaluator_got_new_leader(const uint8_t id, const uint32_t term) {
     fclose(time_until_leader_elected_FILE);
 }
 
+/**
+ * Convenience method to convert the reason enum to strings before written in the evaluation file
+ */
 const char* reason_to_string(enum StoppedReason reason) {
 
     switch(reason) {

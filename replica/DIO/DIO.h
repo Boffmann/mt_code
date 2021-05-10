@@ -25,6 +25,12 @@ typedef struct {
     uint16_t    i16uLength;     ///< length of the variable in bits. Possible valures are 1, 8, 16, 32
 } SPIVariable;
 
+/**
+ * Write a digital pin of the DIO Expension module either high or low
+ * 
+ * @param port_name Name of the DIO Port to write to
+ * @param value True to set port HIGH, false to set port LOW
+ */
 void digital_write(char* port_name, const bool value);
 
 void watchdog_init();
