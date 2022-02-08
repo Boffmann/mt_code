@@ -1,9 +1,11 @@
 from scenario import ReachEndOfMA, BaliseNotLinked, BaliseNotWhereExpected
 
+remoteExeuction = True
+
 def main():
-    reachEndOfMA = ReachEndOfMA()
-    baliseNotLinked = BaliseNotLinked()
-    baliseNotWhereExpected = BaliseNotWhereExpected()
+    reachEndOfMA = ReachEndOfMA(remoteExeuction)
+    baliseNotLinked = BaliseNotLinked(remoteExeuction)
+    baliseNotWhereExpected = BaliseNotWhereExpected(remoteExeuction)
     reachEndOfMA.run()
     reachEndOfMA.evaluate()
     baliseNotLinked.run()

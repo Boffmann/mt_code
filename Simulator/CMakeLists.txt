@@ -14,6 +14,8 @@ set(META_VERSION             "${META_VERSION_MAJOR}.${META_VERSION_MINOR}.${META
 set(META_NAME_VERSION        "${META_PROJECT_NAME} v${META_VERSION} (${META_VERSION_REVISION})")
 set(META_CMAKE_INIT_SHA      "${GIT_REV}")
 
+# set(replica_dir "../replica")
+
 string(MAKE_C_IDENTIFIER ${META_PROJECT_NAME} META_PROJECT_ID)
 string(TOUPPER ${META_PROJECT_ID} META_PROJECT_ID)
 
@@ -38,5 +40,5 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 # Create version file
 file(WRITE "${PROJECT_BINARY_DIR}/VERSION" "${META_NAME_VERSION}")
 
-add_subdirectory(datamodel)
+# add_subdirectory(${replica_dir} datamodel)
 add_subdirectory(src)

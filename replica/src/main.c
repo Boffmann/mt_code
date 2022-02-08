@@ -217,6 +217,7 @@ void main_loop() {
                 take_disposed_inputs();
                 status = RevPiDDS_InputDataReader_return_loan(input_DataReader, message_seq, message_infoSeq);
                 checkStatus(status, "RevPiDDS_InputDataReader_return_loan");
+                sleep(1);
                 continue;
             }
 

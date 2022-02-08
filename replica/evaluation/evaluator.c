@@ -82,7 +82,8 @@ const char* reason_to_string(enum StoppedReason reason) {
 void evaluator_start_new_jouney() {
     scenario_evaluation_FILE = fopen("scenario_evaluation.yml", "w");
 
-    fprintf(scenario_evaluation_FILE, "%s;%s;%s;%s\n", "Position", "Action", "Balise Number", "Reason");
+    // fprintf(scenario_evaluation_FILE, "%s;%s;%s;%s\n", "Position", "Action", "Balise Number", "Reason");
+    fprintf(scenario_evaluation_FILE, "\n");
 
     fclose(scenario_evaluation_FILE);
 
@@ -91,11 +92,15 @@ void evaluator_start_new_jouney() {
 void evaluator_train_stopped(const double stopped_position, int balise_id, enum StoppedReason reason) {
     scenario_evaluation_FILE = fopen("scenario_evaluation.yml", "a");
 
+    struct timeval time_now;
+    gettimeofday(&time_now, NULL);
+    unsigned long long time_now_ms = time_now.tv_sec * 1000000L + time_now.tv_usec;
+
     if (scenario_evaluation_FILE == NULL) {
         printf("Could not open file for scenario evaluation");
     } else {
 
-        fprintf(scenario_evaluation_FILE, "%lf;%s;%d;%s\n", stopped_position, "Stopped", balise_id, reason_to_string(reason));
+        fprintf(scenario_evaluation_FILE, "%lld;%lf;%s;%d;%s\n", time_now_ms, stopped_position, "Stopped", balise_id, reason_to_string(reason));
     }
 
     fclose(scenario_evaluation_FILE);
@@ -104,10 +109,14 @@ void evaluator_train_stopped(const double stopped_position, int balise_id, enum 
 void evaluator_reached_balise(const double position, int balise_id) {
     scenario_evaluation_FILE = fopen("scenario_evaluation.yml", "a");
 
+    struct timeval time_now;
+    gettimeofday(&time_now, NULL);
+    unsigned long long time_now_ms = time_now.tv_sec * 1000000L + time_now.tv_usec;
+
     if (scenario_evaluation_FILE == NULL) {
         printf("Could not open file for scenario evaluation");
     } else {
-        fprintf(scenario_evaluation_FILE, "%lf;%s;%d;%s\n", position, "Reached Balise", balise_id, "");
+        fprintf(scenario_evaluation_FILE, "%lld;%lf;%s;%d;%s\n", time_now_ms, position, "Reached Balise", balise_id, "");
     }
 
     fclose(scenario_evaluation_FILE);

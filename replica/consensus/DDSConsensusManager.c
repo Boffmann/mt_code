@@ -499,7 +499,7 @@ void createActivateSpareTopic() {
     // TODO
     topicQos->destination_order.kind = DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
     topicQos->durability.kind = DDS_VOLATILE_DURABILITY_QOS;
-    topicQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
+    topicQos->history.kind = DDS_KEEP_LAST_HISTORY_QOS;
     topicQos->history.depth = 1;
     topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
     topicQos->resource_limits.max_samples = 1;

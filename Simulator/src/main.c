@@ -64,9 +64,9 @@ int main(int argc, char *argv[]) {
 
     send_linking_information(linked_balises);
     struct timespec timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_nsec = 500000000;
-    nanosleep(&timeout, &timeout);
+    /* timeout.tv_sec = 0; */
+    /* timeout.tv_nsec = 500000000; */
+    /* nanosleep(&timeout, &timeout); */
 
     // struct timeval time_started;
     // gettimeofday(&time_started, NULL);

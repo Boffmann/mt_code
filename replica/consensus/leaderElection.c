@@ -107,7 +107,7 @@ void run_leader_election() {
 
         } else if (status == DDS_RETCODE_TIMEOUT) {
             printf("Leader election timeouted\n");
-            election_finished = true;
+            // election_finished = true;
         } else {
             // Some error happened.
             checkStatus(status, "DDS_WaitSet_wait collectVotes Waitset");

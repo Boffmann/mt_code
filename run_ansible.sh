@@ -55,6 +55,7 @@ if $CANCEL; then
   NUM_PANES=$(tmux list-panes -t revpi | wc -l)
   NUM_PANES=`expr $NUM_PANES - 1`
   for pane_index in $( eval echo {0..$NUM_PANES}); do
+  # for pane_index in $( eval echo {0..2}); do
     tmux send-keys -t $PROJECT.$pane_index C-c
   done
   exit 0
@@ -65,9 +66,12 @@ if $RUN; then
   NUM_PANES=$(tmux list-panes -t revpi | wc -l)
   NUM_PANES=`expr $NUM_PANES - 1`
   for pane_index in $( eval echo {0..$NUM_PANES}); do
+  # for pane_index in $( eval echo {0..2}); do
     tmux send -t $PROJECT.$pane_index "cd ~/revpi/build" ENTER
-    tmux send -t $PROJECT.$pane_index "rm leader_election_duration.csv message_received.csv message_send.csv missed_election_timeouts.csv" ENTER
+    tmux send -t $PROJECT.$pane_index "rm scenario_evaluation.yml out.out stat.out leader_election_duration.csv message_received.csv message_send.csv missed_election_timeouts.csv" ENTER
+    tmux send -t $PROJECT.$pane_index "touch scenario_evaluation.yml" ENTER
     tmux send -t $PROJECT.$pane_index "clear" ENTER
+    # tmux send -t $PROJECT.$pane_index "./replica $pane_index > out.out & pidstat 1 -G replica > stat.out" ENTER
     tmux send -t $PROJECT.$pane_index "./replica $pane_index" ENTER
   done
   exit 0
